@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
@@ -16,7 +16,7 @@ const LoginPage: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error', err);
@@ -63,6 +63,14 @@ const LoginPage: React.FC = () => {
             </button>
           </div>
         </form>
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600">
+            Belum punya akun?{' '}
+            <Link to="/signup" className="text-indigo-600 hover:text-indigo-500">
+              Daftar di sini
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

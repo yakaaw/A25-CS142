@@ -25,18 +25,49 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Dashboard</h2>
-      <p>Selamat datang{userProfile?.name ? `, ${userProfile.name}` : ''}.</p>
-      <p>Role: {userProfile?.role || '—'}</p>
-      <div style={{ marginTop: 12 }}>
-        <button onClick={handleLogout}>Logout</button>
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <Link to="/bapb">BAPB</Link> | <Link to="/bapp">BAPP</Link>
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <Link to="/">Kembali ke home</Link>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h1>
+          <div className="bg-blue-50 p-4 rounded-lg mb-6">
+            <h2 className="text-lg font-semibold text-blue-900">
+              Selamat datang{userProfile?.name ? `, ${userProfile.name}` : ''}!
+            </h2>
+            <p className="text-blue-700 mt-1">
+              Role: <span className="font-medium">{userProfile?.role || '—'}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Menu Utama</h3>
+            <div className="space-y-3">
+              <Link
+                to="/bapb"
+                className="block w-full bg-indigo-600 text-white text-center py-2 px-4 rounded hover:bg-indigo-700 transition-colors"
+              >
+                Kelola BAPB
+              </Link>
+              <Link
+                to="/bapp"
+                className="block w-full bg-green-600 text-white text-center py-2 px-4 rounded hover:bg-green-700 transition-colors"
+              >
+                Kelola BAPP
+              </Link>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Akun</h3>
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
