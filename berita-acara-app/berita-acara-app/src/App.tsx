@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
 import LoginPage from './pages/Login';
@@ -12,63 +12,95 @@ import BAPBDetail from './pages/bapb/BAPBDetail';
 import BAPPList from './pages/bapp/BAPPList';
 import BAPPCreate from './pages/bapp/BAPPCreate';
 import BAPPDetail from './pages/bapp/BAPPDetail';
+import { getAllBAPB } from './services/bapbService';
+import { getAllBAPP } from './services/bappService';
 
 const Dashboard: React.FC = () => {
-  const { userProfile, logout } = useAuth();
+  const { userProfile } = useAuth();
+  const [stats, setStats] = useState({
+    totalBAPB: 0,
+    totalBAPP: 0,
+    pendingBAPB: 0,
+    pendingBAPP: 0,
+    approvedBAPB: 0,
+    approvedBAPP: 0,
+  });
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error('Logout error', err);
-    }
-  };
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const bapbResult = await getAllBAPB();
+        const bappResult = await getAllBAPP();
+
+        if (bapbResult.success && bapbResult.data) {
+          const bapbData = bapbResult.data;
+          setStats(prev => ({
+            ...prev,
+            totalBAPB: bapbData.length,
+            pendingBAPB: bapbData.filter(item => item.status === 'pending').length,
+            approvedBAPB: bapbData.filter(item => item.status === 'approved').length,
+          }));
+        }
+
+        if (bappResult.success && bappResult.data) {
+          const bappData = bappResult.data;
+          setStats(prev => ({
+            ...prev,
+            totalBAPP: bappData.length,
+            pendingBAPP: bappData.filter(item => item.status === 'pending').length,
+            approvedBAPP: bappData.filter(item => item.status === 'approved').length,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h1>
-          <div className="bg-blue-50 p-4 rounded-lg mb-6">
-            <h2 className="text-lg font-semibold text-blue-900">
-              Selamat datang{userProfile?.name ? `, ${userProfile.name}` : ''}!
-            </h2>
-            <p className="text-blue-700 mt-1">
-              Role: <span className="font-medium">{userProfile?.role || '—'}</span>
-            </p>
-          </div>
+    <div
+      className="page-bg-glass flex items-center justify-center min-h-screen p-6"
+      style={{
+        backgroundImage: `linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), url('/bg.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      <div className="dashboard">
+        <div className="card">
+          <h3 className="text-white text-xl font-bold mb-2">Selamat Datang{userProfile?.name ? `, ${userProfile.name}` : ''}!</h3>
+          <p className="text-white text-opacity-80">Role: {userProfile?.role || '—'}</p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Menu Utama</h3>
-            <div className="space-y-3">
-              <Link
-                to="/bapb"
-                className="block w-full bg-indigo-600 text-white text-center py-2 px-4 rounded hover:bg-indigo-700 transition-colors"
-              >
-                Kelola BAPB
-              </Link>
-              <Link
-                to="/bapp"
-                className="block w-full bg-green-600 text-white text-center py-2 px-4 rounded hover:bg-green-700 transition-colors"
-              >
-                Kelola BAPP
-              </Link>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Akun</h3>
-            <button
-              onClick={handleLogout}
-              className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
+        <div className="card">
+          <h3 className="text-white text-lg font-semibold mb-2">Total BAPB</h3>
+          <p className="text-2xl font-bold text-white">{stats.totalBAPB}</p>
+        </div>
+        <div className="card">
+          <h3 className="text-white text-lg font-semibold mb-2">Total BAPP</h3>
+          <p className="text-2xl font-bold text-white">{stats.totalBAPP}</p>
+        </div>
+        <div className="card">
+          <h3 className="text-white text-lg font-semibold mb-2">Pending BAPB</h3>
+          <p className="text-2xl font-bold text-white">{stats.pendingBAPB}</p>
+        </div>
+        <div className="card">
+          <h3 className="text-white text-lg font-semibold mb-2">Pending BAPP</h3>
+          <p className="text-2xl font-bold text-white">{stats.pendingBAPP}</p>
         </div>
       </div>
+    </div>
+  );
+};
+
+const StatusBerkas: React.FC = () => {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-4">Status Berkas</h1>
+      <p className="text-gray-600">Halaman untuk melihat status berkas BAPB dan BAPP.</p>
+      {/* TODO: Implement status berkas content */}
     </div>
   );
 };
@@ -149,6 +181,17 @@ function App() {
           <PrivateRoute>
             <Layout>
               <BAPPDetail />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/status-berkas"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <StatusBerkas />
             </Layout>
           </PrivateRoute>
         }

@@ -31,47 +31,52 @@ const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded shadow p-6">
-        <h2 className="text-xl font-semibold text-center mb-4">Daftar - Berita Acara</h2>
-        {error && <div className="text-red-600 bg-red-50 p-2 rounded mb-3">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nama</label>
+    <div
+      className="page-bg-glass auth-page p-4"
+      style={{
+        backgroundImage: `linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), url('/bg.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      <div className="glass-container">
+        <form className="glass-form" onSubmit={handleSubmit}>
+          <h2>Daftar - Berita Acara</h2>
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+          <div className="input-group">
             <input
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Nama Lengkap"
               required
-              placeholder="Nama lengkap"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+          <div className="input-group">
             <input
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
               required
-              placeholder="you@example.com"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+          <div className="input-group">
             <input
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
               required
-              placeholder="password"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Role</label>
+          <div className="input-group">
             <select
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
@@ -81,24 +86,18 @@ const SignupPage: React.FC = () => {
               <option value="direksi">Direksi</option>
             </select>
           </div>
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full inline-flex justify-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-60"
-            >
-              {loading ? 'Mendaftar...' : 'Daftar'}
-            </button>
+          <button type="submit" disabled={loading}>
+            {loading ? 'Mendaftar...' : 'Daftar'}
+          </button>
+          <div className="form-footer">
+            <p className="text-white text-opacity-80 text-sm">
+              Sudah punya akun?{' '}
+              <Link to="/login" className="text-blue-400 hover:text-blue-300 font-semibold">
+                Login di sini
+              </Link>
+            </p>
           </div>
         </form>
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">
-            Sudah punya akun?{' '}
-            <Link to="/login" className="text-indigo-600 hover:text-indigo-500">
-              Login di sini
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   );
