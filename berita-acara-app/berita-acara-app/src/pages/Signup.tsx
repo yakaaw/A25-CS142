@@ -32,7 +32,7 @@ const SignupPage: React.FC = () => {
 
   return (
     <div
-      className="page-bg-glass auth-page p-4"
+      className="page-bg-glass auth-page"
       style={{
         backgroundImage: `linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), url('/bg.jpg')`,
         backgroundSize: 'cover',
@@ -90,9 +90,9 @@ const SignupPage: React.FC = () => {
             {loading ? 'Mendaftar...' : 'Daftar'}
           </button>
           <div className="form-footer">
-            <p className="text-white text-opacity-80 text-sm">
+            <p className="auth-footer-text">
               Sudah punya akun?{' '}
-              <Link to="/login" className="text-blue-400 hover:text-blue-300 font-semibold">
+              <Link to="/login" className="auth-link auth-link-blue">
                 Login di sini
               </Link>
             </p>

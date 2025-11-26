@@ -14,15 +14,15 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-full glass px-6 py-4 flex items-center gap-6 fixed left-0 top-16 z-30 shadow-lg border-b border-white border-opacity-10">
-      <div className="relative z-10">
-        <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-          <FileText className="text-white w-4 h-4" />
+    <aside className="sidebar glass">
+      <div className="sidebar-header">
+        <h2 className="sidebar-title">
+          <FileText />
           Menu
         </h2>
       </div>
 
-      <nav className="flex flex-row gap-3 items-center">
+      <nav className="sidebar-nav">
         {menuItems.map((item) => {
           const isActive =
             location.pathname === item.to ||
@@ -31,22 +31,10 @@ const Sidebar: React.FC = () => {
             <button
               key={item.to}
               onClick={() => navigate(item.to)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white hover:bg-white hover:bg-opacity-20 transition-all duration-300 group border border-white border-opacity-20 ${
-                isActive
-                  ? "bg-white bg-opacity-25 shadow-md"
-                  : "bg-white bg-opacity-10"
-              }`}
+              className={`sidebar-menu-item ${isActive ? "active" : ""}`}
             >
-              <item.icon
-                className={`w-4 h-4 transition-colors duration-300 ${
-                  isActive
-                    ? "text-blue-300"
-                    : "text-white group-hover:text-blue-200"
-                }`}
-              />
-              <span className="font-medium text-sm whitespace-nowrap">
-                {item.label}
-              </span>
+              <item.icon className={`sidebar-icon ${isActive ? "active" : ""}`} />
+              <span>{item.label}</span>
             </button>
           );
         })}

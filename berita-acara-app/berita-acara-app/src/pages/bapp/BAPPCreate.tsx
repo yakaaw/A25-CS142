@@ -6,9 +6,9 @@ const BAPPCreate: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="p-6">
-      <h3 className="text-xl font-semibold mb-4">Buat BAPP</h3>
-      <div className="bg-white rounded shadow p-4">
+    <div className="create-page">
+      <h3 className="create-title">Buat BAPP</h3>
+      <div className="create-form-container">
         <BAPPForm onSaved={(id) => navigate(`/bapp/${id}`)} />
       </div>
     </div>

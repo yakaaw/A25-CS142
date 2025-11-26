@@ -65,7 +65,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div
-      className="page-bg-glass flex items-center justify-center min-h-screen p-8"
+      className="page-bg-glass dashboard-container"
       style={{
         backgroundImage: `linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), url('/bg.jpg')`,
         backgroundSize: "cover",
@@ -75,32 +75,28 @@ const Dashboard: React.FC = () => {
     >
       <div className="dashboard">
         <div className="card">
-          <h3 className="text-white text-xl font-bold mb-3">
+          <h3>
             Selamat Datang{userProfile?.name ? `, ${userProfile.name}` : ""}!
           </h3>
-          <p className="text-white text-opacity-90 text-base">
+          <p>
             Role: {userProfile?.role || "—"}
           </p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-3">Total BAPB</h3>
-          <p className="text-3xl font-bold text-white">{stats.totalBAPB}</p>
+          <h3>Total BAPB</h3>
+          <p className="stat-number">{stats.totalBAPB}</p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-3">Total BAPP</h3>
-          <p className="text-3xl font-bold text-white">{stats.totalBAPP}</p>
+          <h3>Total BAPP</h3>
+          <p className="stat-number">{stats.totalBAPP}</p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-3">
-            Pending BAPB
-          </h3>
-          <p className="text-3xl font-bold text-white">{stats.pendingBAPB}</p>
+          <h3>Pending BAPB</h3>
+          <p className="stat-number">{stats.pendingBAPB}</p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-3">
-            Pending BAPP
-          </h3>
-          <p className="text-3xl font-bold text-white">{stats.pendingBAPP}</p>
+          <h3>Pending BAPP</h3>
+          <p className="stat-number">{stats.pendingBAPP}</p>
         </div>
       </div>
     </div>
@@ -109,9 +105,9 @@ const Dashboard: React.FC = () => {
 
 const StatusBerkas: React.FC = () => {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Status Berkas</h1>
-      <p className="text-gray-600">
+    <div className="status-berkas-container">
+      <h1>Status Berkas</h1>
+      <p>
         Halaman untuk melihat status berkas BAPB dan BAPP.
       </p>
       {/* TODO: Implement status berkas content */}

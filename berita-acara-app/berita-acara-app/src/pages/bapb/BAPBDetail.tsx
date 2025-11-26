@@ -36,45 +36,44 @@ const BAPBDetail: React.FC = () => {
     if (refreshed.success) setData(refreshed.data ?? null);
   };
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-600">{error}</div>;
-  if (!data) return <div className="p-6">Tidak ada data</div>;
+  if (loading) return <div className="detail-loading">Loading...</div>;
+  if (error) return <div className="detail-error">{error}</div>;
+  if (!data) return <div className="detail-empty">Tidak ada data</div>;
 
   return (
-    <div className="p-6">
-      <div className="mb-4">
-        <h3 className="text-xl font-semibold">BAPB Detail</h3>
+    <div className="detail-page">
+      <div className="detail-header">
+        <h3 className="detail-title">BAPB Detail</h3>
       </div>
 
-      <div className="bg-white rounded shadow p-4 space-y-3">
-        <div><strong>ID:</strong> <span className="text-gray-700">{data.id}</span></div>
-        <div><strong>Vendor:</strong> <span className="text-gray-700">{data.vendorId}</span></div>
-        <div><strong>Status:</strong> <span className="text-gray-700">{data.status}</span></div>
-        <div><strong>Created:</strong> <span className="text-gray-700">{data.createdAt}</span></div>
+      <div className="detail-card">
+        <div className="detail-row"><strong>ID:</strong> <span>{data.id}</span></div>
+        <div className="detail-row"><strong>Vendor:</strong> <span>{data.vendorId}</span></div>
+        <div className="detail-row"><strong>Status:</strong> <span>{data.status}</span></div>
+        <div className="detail-row"><strong>Created:</strong> <span>{data.createdAt}</span></div>
 
-        <div>
+        <div className="detail-row">
           <strong>Items:</strong>
-          <pre className="mt-2 bg-gray-100 p-3 rounded text-sm overflow-auto">{JSON.stringify(data.items, null, 2)}</pre>
+          <pre className="detail-pre">{JSON.stringify(data.items, null, 2)}</pre>
         </div>
 
-        <div>
+        <div className="detail-row">
           <strong>Notes:</strong>
-          <div className="mt-1 text-gray-700">{data.notes}</div>
+          <div className="detail-notes">{data.notes}</div>
         </div>
 
-        <div className="pt-3">
+        <div className="detail-actions">
           <button
             onClick={handleApprove}
             disabled={data.status === 'approved'}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
+            className="btn btn-approve"
           >
             Approve
           </button>
           <button
             onClick={handleReject}
-            style={{ marginLeft: 8 }}
             disabled={data.status === 'rejected'}
-            className="ml-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-60"
+            className="btn btn-reject"
           >
             Reject
           </button>
