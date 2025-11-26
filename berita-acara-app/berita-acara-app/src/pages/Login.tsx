@@ -37,7 +37,7 @@ const LoginPage: React.FC = () => {
     >
       <div className="glass-container">
         <form className="glass-form" onSubmit={handleSubmit}>
-          <h2>Login - Berita Acara</h2>
+          <h2>Login - Reportify</h2>
           {error && (
             <div className="error-message">
               {error}

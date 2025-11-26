@@ -15,7 +15,19 @@ const BAPPList: React.FC = () => {
     load();
   }, []);
 
-  if (loading) return <div className="detail-loading">Loading BAPP...</div>;
+  if (loading) return (
+    <div className="list-loading-container">
+      <div className="loading-container glass-card">
+        <div className="loading-spinner"></div>
+        <p className="loading-text">Loading BAPP...</p>
+        <div className="loading-dots">
+          <div className="loading-dot"></div>
+          <div className="loading-dot" style={{animationDelay: '0.1s'}}></div>
+          <div className="loading-dot" style={{animationDelay: '0.2s'}}></div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="list-page page-enter">

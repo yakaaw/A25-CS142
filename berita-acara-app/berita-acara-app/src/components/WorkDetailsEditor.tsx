@@ -1,4 +1,5 @@
 import React from 'react';
+import { Plus, Trash2, Briefcase } from 'lucide-react';
 
 interface WorkDetail {
   description: string;
@@ -29,52 +30,63 @@ const WorkDetailsEditor: React.FC<Props> = ({ details, onChange }) => {
   };
 
   return (
-    <div className="work-details-editor">
-      <div className="work-details-header">
-        <label className="work-details-label">Work Details</label>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="btn btn-add"
-        >
-          + Tambah
+    <div className="items-editor">
+      <div className="items-editor-header">
+        <button type="button" onClick={handleAdd} className="items-add-btn">
+          <Plus size={16} />
+          <span>Tambah Pekerjaan</span>
         </button>
       </div>
 
-      <div className="work-details-list">
-        {details.length === 0 && <div className="work-details-empty">Belum ada detail pekerjaan.</div>}
-        {details.map((d, idx) => (
-          <div key={idx} className="work-details-row">
-            <input
-              className="work-input work-input-desc"
-              placeholder="Deskripsi pekerjaan"
-              value={d.description}
-              onChange={(e) => handleChange(idx, 'description', e.target.value)}
-            />
-            <input
-              className="work-input work-input-hours"
-              placeholder="Jam"
-              type="number"
-              min={0}
-              value={d.hours as any}
-              onChange={(e) => handleChange(idx, 'hours', e.target.value === '' ? '' : Number(e.target.value))}
-            />
-            <input
-              className="work-input work-input-notes"
-              placeholder="Catatan singkat"
-              value={d.notes}
-              onChange={(e) => handleChange(idx, 'notes', e.target.value)}
-            />
-            <button
-              type="button"
-              className="btn btn-remove"
-              onClick={() => handleRemove(idx)}
-            >
-              Hapus
-            </button>
+      {details.length === 0 ? (
+        <div className="items-empty">
+          <Briefcase size={32} className="items-empty-icon" />
+          <p>Belum ada detail pekerjaan</p>
+          <span>Klik tombol "Tambah Pekerjaan" untuk menambahkan detail baru</span>
+        </div>
+      ) : (
+        <div className="items-list">
+          <div className="work-table-header">
+            <span className="work-col-desc">Deskripsi Pekerjaan</span>
+            <span className="work-col-hours">Jam</span>
+            <span className="work-col-notes">Catatan</span>
+            <span className="work-col-action"></span>
           </div>
-        ))}
-      </div>
+          {details.map((d, idx) => (
+            <div key={idx} className="items-row">
+              <div className="items-row-number">{idx + 1}</div>
+              <input
+                className="items-input work-input-desc"
+                placeholder="Masukkan deskripsi pekerjaan"
+                value={d.description}
+                onChange={(e) => handleChange(idx, 'description', e.target.value)}
+              />
+              <input
+                className="items-input work-input-hours"
+                placeholder="0"
+                type="number"
+                min={0}
+                value={d.hours as any}
+                onChange={(e) => handleChange(idx, 'hours', e.target.value === '' ? '' : Number(e.target.value))}
+              />
+              <input
+                className="items-input work-input-notes"
+                placeholder="Catatan singkat"
+                value={d.notes}
+                onChange={(e) => handleChange(idx, 'notes', e.target.value)}
+              />
+              <button
+                type="button"
+                className="items-remove-btn"
+                onClick={() => handleRemove(idx)}
+                title="Hapus pekerjaan"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

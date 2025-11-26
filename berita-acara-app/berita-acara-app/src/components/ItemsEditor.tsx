@@ -1,4 +1,5 @@
 import React from 'react';
+import { Plus, Trash2, Package } from 'lucide-react';
 
 interface Item {
   id?: string;
@@ -32,58 +33,70 @@ const ItemsEditor: React.FC<Props> = ({ items, onChange }) => {
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-medium text-gray-700">Items</label>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="inline-flex items-center px-2 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
-        >
-          + Tambah Item
+    <div className="items-editor">
+      <div className="items-editor-header">
+        <button type="button" onClick={handleAdd} className="items-add-btn">
+          <Plus size={16} />
+          <span>Tambah Item</span>
         </button>
       </div>
 
-      <div className="space-y-2">
-        {items.length === 0 && <div className="text-sm text-gray-500">Belum ada item.</div>}
-        {items.map((it, idx) => (
-          <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-            <input
-              className="col-span-6 p-2 border rounded"
-              placeholder="Deskripsi item"
-              value={it.description}
-              onChange={(e) => handleChange(idx, 'description', e.target.value)}
-            />
-            <input
-              className="col-span-2 p-2 border rounded"
-              placeholder="Qty"
-              type="number"
-              min={0}
-              value={it.qty as any}
-              onChange={(e) => handleChange(idx, 'qty', e.target.value === '' ? '' : Number(e.target.value))}
-            />
-            <input
-              className="col-span-2 p-2 border rounded"
-              placeholder="Unit"
-              value={it.unit}
-              onChange={(e) => handleChange(idx, 'unit', e.target.value)}
-            />
-            <input
-              className="col-span-1 p-2 border rounded"
-              placeholder="Cond"
-              value={it.condition}
-              onChange={(e) => handleChange(idx, 'condition', e.target.value)}
-            />
-            <button
-              type="button"
-              className="col-span-1 inline-flex justify-center items-center p-2 bg-red-600 text-white rounded hover:bg-red-700"
-              onClick={() => handleRemove(idx)}
-            >
-              Hapus
-            </button>
+      {items.length === 0 ? (
+        <div className="items-empty">
+          <Package size={32} className="items-empty-icon" />
+          <p>Belum ada item ditambahkan</p>
+          <span>Klik tombol "Tambah Item" untuk menambahkan item baru</span>
+        </div>
+      ) : (
+        <div className="items-list">
+          <div className="items-table-header">
+            <span className="items-col-desc">Deskripsi Item</span>
+            <span className="items-col-qty">Qty</span>
+            <span className="items-col-unit">Unit</span>
+            <span className="items-col-cond">Kondisi</span>
+            <span className="items-col-action"></span>
           </div>
-        ))}
-      </div>
+          {items.map((it, idx) => (
+            <div key={idx} className="items-row">
+              <div className="items-row-number">{idx + 1}</div>
+              <input
+                className="items-input items-input-desc"
+                placeholder="Masukkan deskripsi item"
+                value={it.description}
+                onChange={(e) => handleChange(idx, 'description', e.target.value)}
+              />
+              <input
+                className="items-input items-input-qty"
+                placeholder="0"
+                type="number"
+                min={0}
+                value={it.qty as any}
+                onChange={(e) => handleChange(idx, 'qty', e.target.value === '' ? '' : Number(e.target.value))}
+              />
+              <input
+                className="items-input items-input-unit"
+                placeholder="pcs"
+                value={it.unit}
+                onChange={(e) => handleChange(idx, 'unit', e.target.value)}
+              />
+              <input
+                className="items-input items-input-cond"
+                placeholder="Baik"
+                value={it.condition}
+                onChange={(e) => handleChange(idx, 'condition', e.target.value)}
+              />
+              <button
+                type="button"
+                className="items-remove-btn"
+                onClick={() => handleRemove(idx)}
+                title="Hapus item"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

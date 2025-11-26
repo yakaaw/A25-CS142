@@ -4,10 +4,12 @@ import Sidebar from "./Sidebar";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="min-h-screen page-bg-glass">
+    <div className="app-layout">
       <Navbar />
-      <Sidebar />
-      <main className="bg-transparent pt-36 px-6 pb-6">{children}</main>
+      <div className="app-body">
+        <Sidebar />
+        <main className="app-main">{children}</main>
+      </div>
     </div>
   );
 };

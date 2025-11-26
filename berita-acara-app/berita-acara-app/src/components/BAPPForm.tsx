@@ -5,6 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { uploadFile } from '../services/storageService';
+import { Save, AlertCircle, Upload } from 'lucide-react';
 
 interface Props {
   initial?: Partial<BAPP>;
@@ -61,51 +62,72 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {error && <div className="text-red-600 bg-red-50 p-2 rounded">{error}</div>}
+    <form onSubmit={handleSubmit(onSubmit)} className="form-modern">
+      {error && (
+        <div className="form-error-alert">
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Vendor ID</label>
-        <Controller
-          control={control}
-          name="vendorId"
-          render={({ field }) => (
-            <input
-              {...field}
-              className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-            />
+      <div className="form-section">
+        <h3 className="form-section-title">Informasi Vendor</h3>
+        <div className="form-group">
+          <label className="form-label">Vendor ID <span className="form-required">*</span></label>
+          <Controller
+            control={control}
+            name="vendorId"
+            render={({ field }) => (
+              <input
+                {...field}
+                className="form-input"
+                placeholder="Masukkan ID vendor"
+              />
+            )}
+          />
+          {formState.errors.vendorId && (
+            <p className="form-error">{(formState.errors.vendorId as any).message}</p>
           )}
-        />
-        {formState.errors.vendorId && <div className="text-red-600 text-sm">{(formState.errors.vendorId as any).message}</div>}
+        </div>
       </div>
 
-      <div>
+      <div className="form-section">
+        <h3 className="form-section-title">Detail Pekerjaan</h3>
         <WorkDetailsEditor details={workDetails} onChange={setWorkDetails} />
-        {formState.errors.workDetails && <div className="text-red-600 text-sm">{(formState.errors.workDetails as any).message}</div>}
+        {formState.errors.workDetails && (
+          <p className="form-error">{(formState.errors.workDetails as any).message}</p>
+        )}
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Notes</label>
-        <textarea
-          className="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-        />
+      <div className="form-section">
+        <h3 className="form-section-title">Catatan & Lampiran</h3>
+        <div className="form-group">
+          <label className="form-label">Catatan</label>
+          <textarea
+            className="form-textarea"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
+            placeholder="Tambahkan catatan jika diperlukan..."
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">
+            <Upload size={16} className="form-label-icon" />
+            Lampiran (opsional)
+          </label>
+          <div className="form-file-wrapper">
+            <input type="file" {...register('attachment')} className="form-file-input" />
+            <p className="form-file-hint">PDF, DOC, atau gambar (maks. 5MB)</p>
+          </div>
+        </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Lampiran (opsional)</label>
-        <input type="file" {...register('attachment')} className="mt-1" />
-      </div>
-
-      <div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-60"
-        >
-          {loading ? 'Menyimpan...' : 'Simpan BAPP'}
+      <div className="form-actions">
+        <button type="submit" disabled={loading} className="form-submit-btn">
+          <Save size={18} />
+          <span>{loading ? 'Menyimpan...' : 'Simpan BAPP'}</span>
         </button>
       </div>
     </form>

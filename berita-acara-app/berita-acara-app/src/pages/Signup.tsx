@@ -42,7 +42,7 @@ const SignupPage: React.FC = () => {
     >
       <div className="glass-container">
         <form className="glass-form" onSubmit={handleSubmit}>
-          <h2>Daftar - Berita Acara</h2>
+          <h2>Daftar - Reportify</h2>
           {error && (
             <div className="error-message">
               {error}

@@ -1,28 +1,32 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FileText, Home, File, CheckCircle } from "lucide-react";
+import { Home, FileText, File, FilePlus, LogOut } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
 
   const menuItems = [
     { to: "/dashboard", label: "Dashboard", icon: Home },
-    { to: "/bapb", label: "BAPB", icon: File },
-    { to: "/bapp", label: "BAPP", icon: File },
-    { to: "/status-berkas", label: "Status Berkas", icon: CheckCircle },
+    { to: "/bapb", label: "BAPB", icon: FileText },
+    { to: "/bapp", label: "BAPP", icon: FileText },
+    { to: "/status-berkas", label: "Status Berkas", icon: File },
+    { to: "/tambah-laporan", label: "Tambah Laporan", icon: FilePlus },
   ];
 
-  return (
-    <aside className="sidebar glass">
-      <div className="sidebar-header">
-        <h2 className="sidebar-title">
-          <FileText />
-          Menu
-        </h2>
-      </div>
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
 
-      <nav className="sidebar-nav">
+  return (
+    <aside className="sidebar-vertical">
+      <nav className="sidebar-nav-vertical">
         {menuItems.map((item) => {
           const isActive =
             location.pathname === item.to ||
@@ -31,13 +35,18 @@ const Sidebar: React.FC = () => {
             <button
               key={item.to}
               onClick={() => navigate(item.to)}
-              className={`sidebar-menu-item ${isActive ? "active" : ""}`}
+              className={`sidebar-item ${isActive ? "active" : ""}`}
             >
-              <item.icon className={`sidebar-icon ${isActive ? "active" : ""}`} />
-              <span>{item.label}</span>
+              <item.icon className="sidebar-item-icon" />
+              <span className="sidebar-item-label">{item.label}</span>
             </button>
           );
         })}
+
+        <button onClick={handleLogout} className="sidebar-item sidebar-logout">
+          <LogOut className="sidebar-item-icon" />
+          <span className="sidebar-item-label">Logout</span>
+        </button>
       </nav>
     </aside>
   );
