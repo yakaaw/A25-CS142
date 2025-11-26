@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import './App.css';
-import Layout from './components/Layout';
-import LoginPage from './pages/Login';
-import PrivateRoute from './components/PrivateRoute';
-import SignupPage from './pages/Signup';
-import { useAuth } from './context/AuthContext';
-import BAPBList from './pages/bapb/BAPBList';
-import BAPBCreate from './pages/bapb/BAPBCreate';
-import BAPBDetail from './pages/bapb/BAPBDetail';
-import BAPPList from './pages/bapp/BAPPList';
-import BAPPCreate from './pages/bapp/BAPPCreate';
-import BAPPDetail from './pages/bapp/BAPPDetail';
-import { getAllBAPB } from './services/bapbService';
-import { getAllBAPP } from './services/bappService';
+import React, { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import "./App.css";
+import Layout from "./components/Layout";
+import LoginPage from "./pages/Login";
+import PrivateRoute from "./components/PrivateRoute";
+import SignupPage from "./pages/Signup";
+import { useAuth } from "./context/AuthContext";
+import BAPBList from "./pages/bapb/BAPBList";
+import BAPBCreate from "./pages/bapb/BAPBCreate";
+import BAPBDetail from "./pages/bapb/BAPBDetail";
+import BAPPList from "./pages/bapp/BAPPList";
+import BAPPCreate from "./pages/bapp/BAPPCreate";
+import BAPPDetail from "./pages/bapp/BAPPDetail";
+import { getAllBAPB } from "./services/bapbService";
+import { getAllBAPP } from "./services/bappService";
 
 const Dashboard: React.FC = () => {
   const { userProfile } = useAuth();
@@ -34,25 +34,29 @@ const Dashboard: React.FC = () => {
 
         if (bapbResult.success && bapbResult.data) {
           const bapbData = bapbResult.data;
-          setStats(prev => ({
+          setStats((prev) => ({
             ...prev,
             totalBAPB: bapbData.length,
-            pendingBAPB: bapbData.filter(item => item.status === 'pending').length,
-            approvedBAPB: bapbData.filter(item => item.status === 'approved').length,
+            pendingBAPB: bapbData.filter((item) => item.status === "pending")
+              .length,
+            approvedBAPB: bapbData.filter((item) => item.status === "approved")
+              .length,
           }));
         }
 
         if (bappResult.success && bappResult.data) {
           const bappData = bappResult.data;
-          setStats(prev => ({
+          setStats((prev) => ({
             ...prev,
             totalBAPP: bappData.length,
-            pendingBAPP: bappData.filter(item => item.status === 'pending').length,
-            approvedBAPP: bappData.filter(item => item.status === 'approved').length,
+            pendingBAPP: bappData.filter((item) => item.status === "pending")
+              .length,
+            approvedBAPP: bappData.filter((item) => item.status === "approved")
+              .length,
           }));
         }
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        console.error("Error fetching dashboard stats:", error);
       }
     };
 
@@ -61,34 +65,42 @@ const Dashboard: React.FC = () => {
 
   return (
     <div
-      className="page-bg-glass flex items-center justify-center min-h-screen p-6"
+      className="page-bg-glass flex items-center justify-center min-h-screen p-8"
       style={{
         backgroundImage: `linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), url('/bg.jpg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
     >
       <div className="dashboard">
         <div className="card">
-          <h3 className="text-white text-xl font-bold mb-2">Selamat Datang{userProfile?.name ? `, ${userProfile.name}` : ''}!</h3>
-          <p className="text-white text-opacity-80">Role: {userProfile?.role || '—'}</p>
+          <h3 className="text-white text-xl font-bold mb-3">
+            Selamat Datang{userProfile?.name ? `, ${userProfile.name}` : ""}!
+          </h3>
+          <p className="text-white text-opacity-90 text-base">
+            Role: {userProfile?.role || "—"}
+          </p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-2">Total BAPB</h3>
-          <p className="text-2xl font-bold text-white">{stats.totalBAPB}</p>
+          <h3 className="text-white text-lg font-semibold mb-3">Total BAPB</h3>
+          <p className="text-3xl font-bold text-white">{stats.totalBAPB}</p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-2">Total BAPP</h3>
-          <p className="text-2xl font-bold text-white">{stats.totalBAPP}</p>
+          <h3 className="text-white text-lg font-semibold mb-3">Total BAPP</h3>
+          <p className="text-3xl font-bold text-white">{stats.totalBAPP}</p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-2">Pending BAPB</h3>
-          <p className="text-2xl font-bold text-white">{stats.pendingBAPB}</p>
+          <h3 className="text-white text-lg font-semibold mb-3">
+            Pending BAPB
+          </h3>
+          <p className="text-3xl font-bold text-white">{stats.pendingBAPB}</p>
         </div>
         <div className="card">
-          <h3 className="text-white text-lg font-semibold mb-2">Pending BAPP</h3>
-          <p className="text-2xl font-bold text-white">{stats.pendingBAPP}</p>
+          <h3 className="text-white text-lg font-semibold mb-3">
+            Pending BAPP
+          </h3>
+          <p className="text-3xl font-bold text-white">{stats.pendingBAPP}</p>
         </div>
       </div>
     </div>
@@ -99,7 +111,9 @@ const StatusBerkas: React.FC = () => {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-4">Status Berkas</h1>
-      <p className="text-gray-600">Halaman untuk melihat status berkas BAPB dan BAPP.</p>
+      <p className="text-gray-600">
+        Halaman untuk melihat status berkas BAPB dan BAPP.
+      </p>
       {/* TODO: Implement status berkas content */}
     </div>
   );
