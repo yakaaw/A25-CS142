@@ -4,8 +4,8 @@ import WorkDetailsEditor from './WorkDetailsEditor';
 import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { uploadFile } from '../services/storageService';
-import { Save, AlertCircle, Upload } from 'lucide-react';
+import { Save, AlertCircle } from 'lucide-react';
+import FileUpload from './FileUpload';
 
 interface Props {
   initial?: Partial<BAPP>;
@@ -27,10 +27,11 @@ const schema = yup.object({
 const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
   const [workDetails, setWorkDetails] = useState<any[]>(initial.workDetails || []);
   const [notes, setNotes] = useState(initial.notes || '');
+  const [attachments, setAttachments] = useState<string[]>(initial.attachments || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState, register } = useForm<any>({
+  const { control, handleSubmit, formState } = useForm<any>({
     resolver: yupResolver(schema),
     defaultValues: { vendorId: initial.vendorId || '', workDetails: initial.workDetails || [] }
   });
@@ -40,17 +41,10 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
     setLoading(true);
 
     try {
-      let attachmentUrl: string | undefined;
-      if (vals.attachment && vals.attachment.length > 0) {
-        const file: File = vals.attachment[0];
-        const res = await uploadFile(file, 'bapp');
-        attachmentUrl = res.url;
-      }
-
-      const payload: Partial<BAPP> = { vendorId: vals.vendorId, workDetails, notes, attachmentUrl };
+      const payload: Partial<BAPP> = { vendorId: vals.vendorId, workDetails, notes, attachments };
       const res = await createBAPP(payload);
       if (res.success && res.id) {
-        onSaved && onSaved(res.id);
+        onSaved?.(res.id);
       } else {
         setError(res.error || 'Gagal menyimpan BAPP');
       }
@@ -73,13 +67,14 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
       <div className="form-section">
         <h3 className="form-section-title">Informasi Vendor</h3>
         <div className="form-group">
-          <label className="form-label">Vendor ID <span className="form-required">*</span></label>
+          <label htmlFor="vendorId" className="form-label">Vendor ID <span className="form-required">*</span></label>
           <Controller
             control={control}
             name="vendorId"
             render={({ field }) => (
               <input
                 {...field}
+                id="vendorId"
                 className="form-input"
                 placeholder="Masukkan ID vendor"
               />
@@ -102,8 +97,9 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
       <div className="form-section">
         <h3 className="form-section-title">Catatan & Lampiran</h3>
         <div className="form-group">
-          <label className="form-label">Catatan</label>
+          <label htmlFor="notes" className="form-label">Catatan</label>
           <textarea
+            id="notes"
             className="form-textarea"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -113,14 +109,25 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">
-            <Upload size={16} className="form-label-icon" />
-            Lampiran (opsional)
-          </label>
-          <div className="form-file-wrapper">
-            <input type="file" {...register('attachment')} className="form-file-input" />
-            <p className="form-file-hint">PDF, DOC, atau gambar (maks. 5MB)</p>
-          </div>
+          <FileUpload
+            path="bapp"
+            label="Lampiran (opsional)"
+            onUploadComplete={(url) => setAttachments((prev) => [...prev, url])}
+          />
+          {attachments.length > 0 && (
+            <div className="mt-2 space-y-1">
+              <p className="text-sm font-medium text-gray-700">File Terlampir:</p>
+              <ul className="list-disc list-inside text-sm text-blue-600">
+                {attachments.map((url, idx) => (
+                  <li key={`${url}-${idx}`}>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      Lampiran {idx + 1}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Bell, User, ChevronDown, LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Bell, User, ChevronDown, LogOut, Settings } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const { userProfile, logout } = useAuth();
@@ -46,6 +47,12 @@ const Navbar: React.FC = () => {
                 <p className="dropdown-email">{userProfile?.email}</p>
                 <p className="dropdown-role">Role: {userProfile?.role || "—"}</p>
               </div>
+
+              <Link to="/settings/profile" className="dropdown-item-btn" onClick={() => setIsDropdownOpen(false)}>
+                <Settings className="dropdown-icon" size={16} />
+                Pengaturan Profil
+              </Link>
+
               <button onClick={handleLogout} className="dropdown-logout-btn">
                 <LogOut className="dropdown-logout-icon" />
                 Logout

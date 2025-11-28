@@ -4,8 +4,8 @@ import ItemsEditor from './ItemsEditor';
 import { useForm, Controller } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { uploadFile } from '../services/storageService';
-import { Save, AlertCircle, Upload } from 'lucide-react';
+import { Save, AlertCircle } from 'lucide-react';
+import FileUpload from './FileUpload';
 
 interface Props {
   initial?: Partial<BAPB>;
@@ -28,10 +28,11 @@ const schema = yup.object({
 const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
   const [items, setItems] = useState<any[]>(initial.items || []);
   const [notes, setNotes] = useState(initial.notes || '');
+  const [attachments, setAttachments] = useState<string[]>(initial.attachments || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState, register } = useForm<any>({
+  const { control, handleSubmit, formState } = useForm<any>({
     resolver: yupResolver(schema),
     defaultValues: { vendorId: initial.vendorId || '', items: initial.items || [] }
   });
@@ -41,14 +42,7 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
     setLoading(true);
 
     try {
-      let attachmentUrl: string | undefined;
-      if (vals.attachment && vals.attachment.length > 0) {
-        const file: File = vals.attachment[0];
-        const res = await uploadFile(file, 'bapb');
-        attachmentUrl = res.url;
-      }
-
-      const payload: Partial<BAPB> = { vendorId: vals.vendorId, items: items, notes, attachmentUrl };
+      const payload: Partial<BAPB> = { vendorId: vals.vendorId, items: items, notes, attachments };
       const res = await createBAPB(payload);
       if (res.success && res.id) {
         onSaved && onSaved(res.id);
@@ -114,14 +108,25 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">
-            <Upload size={16} className="form-label-icon" />
-            Lampiran (opsional)
-          </label>
-          <div className="form-file-wrapper">
-            <input type="file" {...register('attachment')} className="form-file-input" />
-            <p className="form-file-hint">PDF, DOC, atau gambar (maks. 5MB)</p>
-          </div>
+          <FileUpload
+            path="bapb"
+            label="Lampiran (opsional)"
+            onUploadComplete={(url) => setAttachments((prev) => [...prev, url])}
+          />
+          {attachments.length > 0 && (
+            <div className="mt-2 space-y-1">
+              <p className="text-sm font-medium text-gray-700">File Terlampir:</p>
+              <ul className="list-disc list-inside text-sm text-blue-600">
+                {attachments.map((url, idx) => (
+                  <li key={idx}>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      Lampiran {idx + 1}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 

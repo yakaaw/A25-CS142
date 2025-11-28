@@ -8,15 +8,36 @@ import {
   query,
   where,
   orderBy,
-  DocumentData
+  limit,
+  startAfter
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
+
+export interface BAPBItem {
+  id?: string;
+  description: string;
+  qty: number;
+  unit: string;
+  condition?: string;
+}
+
+export interface ApprovalLog {
+  stage: 'vendor_submit' | 'pic_review' | 'direksi_review';
+  status: 'pending' | 'approved' | 'rejected';
+  actorId: string;
+  actorName: string;
+  timestamp: string;
+  notes?: string;
+}
 
 export interface BAPB {
   id?: string;
   vendorId?: string;
-  items?: any[];
-  status?: 'pending' | 'approved' | 'rejected';
+  items?: BAPBItem[];
+  status?: 'pending' | 'approved' | 'rejected'; // Global status
+  currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
+  approvalHistory?: ApprovalLog[];
+  attachments?: string[];
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;
@@ -26,11 +47,22 @@ const COLLECTION_NAME = 'bapb';
 
 export const createBAPB = async (data: Partial<BAPB>) => {
   try {
+    const initialHistory: ApprovalLog[] = [{
+      stage: 'vendor_submit',
+      status: 'approved',
+      actorId: data.vendorId || 'unknown',
+      actorName: 'Vendor', // Ideally fetch name
+      timestamp: new Date().toISOString(),
+      notes: 'Initial submission'
+    }];
+
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...data,
       status: 'pending',
+      currentStage: 'waiting_pic',
+      approvalHistory: initialHistory,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
     return { success: true, id: docRef.id };
   } catch (error: any) {
@@ -44,7 +76,7 @@ export const getBAPBById = async (id: string) => {
     const docRef = doc(db, COLLECTION_NAME, id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return { success: true, data: { id: docSnap.id, ...(docSnap.data() as DocumentData) } };
+      return { success: true, data: { id: docSnap.id, ...docSnap.data() } as BAPB };
     }
     return { success: false, error: 'Document not found' };
   } catch (error: any) {
@@ -53,13 +85,34 @@ export const getBAPBById = async (id: string) => {
   }
 };
 
-export const getAllBAPB = async () => {
+export const getAllBAPB = async (options?: { limit?: number; lastDoc?: any; status?: string }) => {
   try {
-    const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+    const constraints: any[] = [orderBy('createdAt', 'desc')];
+
+    if (options?.status && options.status !== 'all') {
+      constraints.push(where('status', '==', options.status));
+    }
+
+    if (options?.limit) {
+      constraints.push(limit(options.limit));
+    }
+
+    if (options?.lastDoc) {
+      constraints.push(startAfter(options.lastDoc));
+    }
+
+    const q = query(collection(db, COLLECTION_NAME), ...constraints);
     const querySnapshot = await getDocs(q);
     const bapbList: BAPB[] = [];
-    querySnapshot.forEach((d) => bapbList.push({ id: d.id, ...(d.data() as DocumentData) }));
-    return { success: true, data: bapbList };
+    querySnapshot.forEach((d) => bapbList.push({ id: d.id, ...d.data() } as BAPB));
+
+    const lastDoc = querySnapshot.docs.at(-1);
+
+    return {
+      success: true,
+      data: bapbList,
+      lastDoc
+    };
   } catch (error: any) {
     console.error('Error getting BAPB list:', error);
     return { success: false, error: error.message };
@@ -71,7 +124,7 @@ export const getBAPBByVendor = async (vendorId: string) => {
     const q = query(collection(db, COLLECTION_NAME), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     const bapbList: BAPB[] = [];
-    querySnapshot.forEach((d) => bapbList.push({ id: d.id, ...(d.data() as DocumentData) }));
+    querySnapshot.forEach((d) => bapbList.push({ id: d.id, ...d.data() } as BAPB));
     return { success: true, data: bapbList };
   } catch (error: any) {
     console.error('Error getting BAPB by vendor:', error);
@@ -90,16 +143,58 @@ export const updateBAPB = async (id: string, data: Partial<BAPB>) => {
   }
 };
 
-export const approveBAPB = async (id: string, approverData: { userId: string; name?: string }) => {
+export const approveBAPB = async (id: string, actor: { uid: string, name: string, role: string }, notes?: string) => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) return { success: false, error: 'Document not found' };
+
+    const data = docSnap.data() as BAPB;
+    const history = data.approvalHistory || [];
+    // Logic for multi-stage approval
+    const currentStage = data.currentStage; // Assuming currentStage is available from data
+    const role = actor.role; // Assuming role is available from actor
+
+    let nextStage = currentStage;
+    let newStatus = data.status;
+    let authorizedAction = false;
+
+    if (currentStage === 'waiting_pic' && role === 'pic_gudang') {
+      nextStage = 'waiting_direksi';
+      history.push({
+        stage: 'pic_review',
+        status: 'approved',
+        actorId: actor.uid,
+        actorName: actor.name,
+        timestamp: new Date().toISOString(),
+        notes
+      });
+    } else if (currentStage === 'waiting_direksi' && role === 'direksi') {
+      nextStage = 'approved';
+      newStatus = 'approved';
+      history.push({
+        stage: 'direksi_review',
+        status: 'approved',
+        actorId: actor.uid,
+        actorName: actor.name,
+        timestamp: new Date().toISOString(),
+        notes
+      });
+      authorizedAction = true;
+    }
+
+    if (!authorizedAction) {
+      return { success: false, error: 'Unauthorized approval action' };
+    }
+
     await updateDoc(docRef, {
-      status: 'approved',
-      approvedBy: approverData.userId,
-      approvedByName: approverData.name || '',
-      approvedAt: new Date().toISOString(),
+      currentStage: nextStage,
+      status: newStatus,
+      approvalHistory: history,
       updatedAt: new Date().toISOString()
     });
+
     return { success: true };
   } catch (error: any) {
     console.error('Error approving BAPB:', error);
@@ -107,17 +202,35 @@ export const approveBAPB = async (id: string, approverData: { userId: string; na
   }
 };
 
-export const rejectBAPB = async (id: string, rejectionReason: string, rejecterData: { userId: string; name?: string }) => {
+export const rejectBAPB = async (id: string, actor: { uid: string, name: string, role: string }, notes: string) => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, {
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) return { success: false, error: 'Document not found' };
+
+    const data = docSnap.data() as BAPB;
+    const history = data.approvalHistory || [];
+
+    let stage: 'pic_review' | 'direksi_review' = 'pic_review';
+    if (data.currentStage === 'waiting_direksi') stage = 'direksi_review';
+
+    history.push({
+      stage: stage,
       status: 'rejected',
-      rejectedBy: rejecterData.userId,
-      rejectedByName: rejecterData.name || '',
-      rejectionReason,
-      rejectedAt: new Date().toISOString(),
+      actorId: actor.uid,
+      actorName: actor.name,
+      timestamp: new Date().toISOString(),
+      notes
+    });
+
+    await updateDoc(docRef, {
+      currentStage: 'rejected',
+      status: 'rejected',
+      approvalHistory: history,
       updatedAt: new Date().toISOString()
     });
+
     return { success: true };
   } catch (error: any) {
     console.error('Error rejecting BAPB:', error);

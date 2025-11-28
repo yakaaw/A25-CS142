@@ -1,29 +1,34 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
 import {
   User,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  updatePassword
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-
-type Role = 'pic_gudang' | 'vendor' | 'pemesan' | 'direksi' | string;
+import { getRoleByName } from '../services/roleService';
 
 export interface UserProfile {
   email: string;
   name?: string;
-  role?: Role;
+  role?: string;
   createdAt?: string;
+  uid?: string;
 }
 
 interface AuthContextValue {
   currentUser: User | null;
   userProfile: UserProfile | null;
-  signup: (email: string, password: string, userData: { name?: string; role?: Role }) => Promise<any>;
+  permissions: string[];
+  loading: boolean;
+  signup: (email: string, password: string, userData: { name?: string; role?: string }) => Promise<any>;
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
+  updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -37,9 +42,10 @@ export const useAuth = (): AuthContextValue => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const signup = async (email: string, password: string, userData: { name?: string; role?: Role }) => {
+  const signup = async (email: string, password: string, userData: { name?: string; role?: string }) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await setDoc(doc(db, 'users', userCredential.user.uid), {
       email,
@@ -65,12 +71,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const docRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setUserProfile(docSnap.data() as UserProfile);
+          const userData = docSnap.data() as UserProfile;
+          setUserProfile({ ...userData, uid: user.uid });
+
+          // Fetch permissions based on role
+          if (userData.role) {
+            const roleResult = await getRoleByName(userData.role);
+            if (roleResult.success && roleResult.data) {
+              setPermissions(roleResult.data.permissions);
+            } else {
+              setPermissions([]);
+            }
+          } else {
+            setPermissions([]);
+          }
         } else {
           setUserProfile(null);
+          setPermissions([]);
         }
       } else {
         setUserProfile(null);
+        setPermissions([]);
       }
       setLoading(false);
     });
@@ -78,13 +99,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const value: AuthContextValue = {
+  const updateUserProfile = async (data: Partial<UserProfile>) => {
+    if (!currentUser) throw new Error('No user logged in');
+
+    // Update Firestore
+    const docRef = doc(db, 'users', currentUser.uid);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: new Date().toISOString()
+    });
+
+    // Update local state
+    setUserProfile((prev) => prev ? { ...prev, ...data } : null);
+  };
+
+  const changePassword = async (newPassword: string) => {
+    if (!currentUser) throw new Error('No user logged in');
+    await updatePassword(currentUser, newPassword);
+  };
+
+  const value: AuthContextValue = useMemo(() => ({
     currentUser,
     userProfile,
+    permissions,
+    loading,
     signup,
     login,
-    logout
-  };
+    logout,
+    updateUserProfile,
+    changePassword
+  }), [currentUser, userProfile, permissions, loading]);
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };

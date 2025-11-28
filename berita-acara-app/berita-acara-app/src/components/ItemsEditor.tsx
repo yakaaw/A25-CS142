@@ -7,6 +7,7 @@ interface Item {
   qty: number | '';
   unit: string;
   condition?: string;
+  tempId?: string; // For UI key only
 }
 
 interface Props {
@@ -16,7 +17,13 @@ interface Props {
 
 const ItemsEditor: React.FC<Props> = ({ items, onChange }) => {
   const handleAdd = () => {
-    const next: Item = { description: '', qty: 1, unit: '', condition: '' };
+    const next: Item = {
+      description: '',
+      qty: 1,
+      unit: '',
+      condition: '',
+      tempId: Math.random().toString(36).substr(2, 9)
+    };
     onChange([...items, next]);
   };
 
@@ -57,7 +64,7 @@ const ItemsEditor: React.FC<Props> = ({ items, onChange }) => {
             <span className="items-col-action"></span>
           </div>
           {items.map((it, idx) => (
-            <div key={idx} className="items-row">
+            <div key={it.id || it.tempId || idx} className="items-row">
               <div className="items-row-number">{idx + 1}</div>
               <input
                 className="items-input items-input-desc"

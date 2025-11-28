@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getBAPPById, approveBAPP, rejectBAPP, BAPP } from '../../services/bappService';
 import { useAuth } from '../../context/AuthContext';
+import ApprovalTimeline from '../../components/ApprovalTimeline';
+import { Printer, Paperclip } from 'lucide-react';
+import { generateBAPPPDF } from '../../utils/pdfGenerator';
 
 const BAPPDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,30 +13,54 @@ const BAPPDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { userProfile } = useAuth();
 
+  const fetchData = async () => {
+    if (!id) return;
+    const res = await getBAPPById(id);
+    if (res.success) setData(res.data ?? null);
+    else setError(res.error || 'Dokumen tidak ditemukan');
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      if (!id) return;
-      const res = await getBAPPById(id);
-      if (res.success) setData(res.data ?? null);
-      else setError(res.error || 'Dokumen tidak ditemukan');
-      setLoading(false);
-    };
-    load();
+    fetchData();
   }, [id]);
 
   const handleApprove = async () => {
-    if (!id || !userProfile) return;
-    await approveBAPP(id, { userId: userProfile.email || 'unknown', name: userProfile.name });
-    const refreshed = await getBAPPById(id);
-    if (refreshed.success) setData(refreshed.data ?? null);
+    if (!id || !userProfile?.uid) return;
+
+    const notes = prompt('Catatan approval (opsional):');
+
+    await approveBAPP(id, {
+      uid: userProfile.uid,
+      name: userProfile.name || userProfile.email || 'Unknown',
+      role: userProfile.role || 'unknown'
+    }, notes || undefined);
+
+    fetchData();
   };
 
   const handleReject = async () => {
-    if (!id || !userProfile) return;
-    const reason = prompt('Alasan penolakan:') || 'No reason provided';
-    await rejectBAPP(id, reason, { userId: userProfile.email || 'unknown', name: userProfile.name });
-    const refreshed = await getBAPPById(id);
-    if (refreshed.success) setData(refreshed.data ?? null);
+    if (!id || !userProfile?.uid) return;
+    const reason = prompt('Alasan penolakan:');
+    if (!reason) return;
+
+    await rejectBAPP(id, {
+      uid: userProfile.uid,
+      name: userProfile.name || userProfile.email || 'Unknown',
+      role: userProfile.role || 'unknown'
+    }, reason);
+
+    fetchData();
+  };
+
+  const canApprove = () => {
+    if (!data || !userProfile) return false;
+    if (data.status === 'rejected') return false;
+
+    if (data.currentStage === 'waiting_pic' && userProfile.role === 'pic_gudang') return true;
+    if (data.currentStage === 'waiting_direksi' && userProfile.role === 'direksi') return true;
+
+    return false;
   };
 
   if (loading) return <div className="detail-loading">Loading...</div>;
@@ -41,42 +68,138 @@ const BAPPDetail: React.FC = () => {
   if (!data) return <div className="detail-empty">Tidak ada data</div>;
 
   return (
-    <div className="detail-page">
-      <div className="detail-header">
-        <h3 className="detail-title">BAPP Detail</h3>
+    <div className="max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <div className="text-sm text-gray-500 mb-1">Dashboard / BAPP / Detail</div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">BAPP Detail</h1>
+            <span className={`status-badge status-${data.status}`}>{data.status}</span>
+          </div>
+        </div>
+        <button
+          onClick={() => data && generateBAPPPDF(data)}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          <Printer size={18} />
+          Export PDF
+        </button>
       </div>
 
-      <div className="detail-card">
-        <div className="detail-row"><strong>ID:</strong> <span>{data.id}</span></div>
-        <div className="detail-row"><strong>Vendor:</strong> <span>{data.vendorId}</span></div>
-        <div className="detail-row"><strong>Status:</strong> <span>{data.status}</span></div>
-        <div className="detail-row"><strong>Created:</strong> <span>{data.createdAt}</span></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Document Info Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Informasi Dokumen</h4>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">ID Dokumen</p>
+                <p className="font-medium text-gray-900">{data.id}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Vendor ID</p>
+                <p className="font-medium text-gray-900">{data.vendorId}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Tanggal Dibuat</p>
+                <p className="font-medium text-gray-900">{new Date(data.createdAt || '').toLocaleString('id-ID')}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Tahapan Saat Ini</p>
+                <p className="font-medium text-gray-900 capitalize">{data.currentStage?.replaceAll('_', ' ').replace('waiting', 'Menunggu')}</p>
+              </div>
+            </div>
+          </div>
 
-        <div className="detail-row">
-          <strong>Work Details:</strong>
-          <pre className="detail-pre">{JSON.stringify(data.workDetails, null, 2)}</pre>
+          {/* Work Details Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Detail Pekerjaan</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 text-gray-500 uppercase">
+                  <tr>
+                    <th className="px-4 py-3 rounded-l-lg">Deskripsi Pekerjaan</th>
+                    <th className="px-4 py-3">Jam</th>
+                    <th className="px-4 py-3 rounded-r-lg">Catatan</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.workDetails?.map((item, idx) => (
+                    <tr key={`${item.description}-${item.hours}`} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">{item.description}</td>
+                      <td className="px-4 py-3">{item.hours}</td>
+                      <td className="px-4 py-3 text-gray-500">{item.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Notes Card */}
+          {data.notes && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Catatan</h4>
+              <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">{data.notes}</p>
+            </div>
+          )}
+
+          {/* Attachments Card */}
+          {data.attachments && data.attachments.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Lampiran</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {data.attachments.map((url, idx) => (
+                  <a
+                    key={`${url}-${idx}`}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+                  >
+                    <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 group-hover:bg-blue-200 transition-colors">
+                      <Paperclip size={20} />
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-medium text-gray-900 truncate">Lampiran {idx + 1}</p>
+                      <p className="text-xs text-blue-600">Klik untuk melihat</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="detail-row">
-          <strong>Notes:</strong>
-          <div className="detail-notes">{data.notes}</div>
-        </div>
+        {/* Sidebar Content */}
+        <div className="space-y-6">
+          {/* Approval Timeline */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <ApprovalTimeline currentStage={data.currentStage} approvalHistory={data.approvalHistory} />
+          </div>
 
-        <div className="detail-actions">
-          <button
-            onClick={handleApprove}
-            disabled={data.status === 'approved'}
-            className="btn btn-approve"
-          >
-            Approve
-          </button>
-          <button
-            onClick={handleReject}
-            disabled={data.status === 'rejected'}
-            className="btn btn-reject"
-          >
-            Reject
-          </button>
+          {/* Actions */}
+          {canApprove() && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Tindakan</h4>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleApprove}
+                  className="w-full bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
+                >
+                  Setujui Dokumen
+                </button>
+                <button
+                  onClick={handleReject}
+                  className="w-full bg-white text-red-600 border border-red-200 py-2.5 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                >
+                  Tolak Dokumen
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
