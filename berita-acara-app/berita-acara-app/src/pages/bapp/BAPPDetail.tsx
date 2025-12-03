@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { getBAPPById, approveBAPP, rejectBAPP, BAPP } from '../../services/bappService';
 import { useAuth } from '../../context/AuthContext';
@@ -11,19 +11,19 @@ const BAPPDetail: React.FC = () => {
   const [data, setData] = useState<BAPP | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { userProfile } = useAuth();
+  const { userProfile, permissions } = useAuth();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!id) return;
     const res = await getBAPPById(id);
     if (res.success) setData(res.data ?? null);
     else setError(res.error || 'Dokumen tidak ditemukan');
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, [id, fetchData]);
 
   const handleApprove = async () => {
     if (!id || !userProfile?.uid) return;
@@ -54,13 +54,23 @@ const BAPPDetail: React.FC = () => {
   };
 
   const canApprove = () => {
-    if (!data || !userProfile) return false;
+    if (!data || (!permissions.includes('bapp.verify') && !permissions.includes('bapp.approve'))) return false;
     if (data.status === 'rejected') return false;
 
-    if (data.currentStage === 'waiting_pic' && userProfile.role === 'pic_gudang') return true;
-    if (data.currentStage === 'waiting_direksi' && userProfile.role === 'direksi') return true;
-
+    // Pemesan can verify at waiting_pic, Direksi can approve at waiting_direksi
+    if (permissions.includes('bapp.verify') && data.currentStage === 'waiting_pic') return true;
+    if (permissions.includes('bapp.approve') && data.currentStage === 'waiting_direksi') return true;
     return false;
+  };
+
+  const canReject = () => {
+    return canApprove(); // Same logic for reject
+  };
+
+  const getApproveButtonText = () => {
+    if (permissions.includes('bapp.verify')) return 'Verifikasi & Terbitkan';
+    if (permissions.includes('bapp.approve')) return 'Setujui Dokumen';
+    return 'Setujui';
   };
 
   if (loading) return <div className="detail-loading">Loading...</div>;
@@ -108,7 +118,11 @@ const BAPPDetail: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Tahapan Saat Ini</p>
-                <p className="font-medium text-gray-900 capitalize">{data.currentStage?.replaceAll('_', ' ').replace('waiting', 'Menunggu')}</p>
+                <p className="font-medium text-gray-900 capitalize">
+                  {data.currentStage === 'waiting_pic' ? 'Menunggu Review Pemesan' :
+                   data.currentStage === 'waiting_direksi' ? 'Menunggu Review Direksi' :
+                   data.currentStage?.replaceAll('_', ' ').replace('waiting', 'Menunggu')}
+                </p>
               </div>
             </div>
           </div>
@@ -177,7 +191,7 @@ const BAPPDetail: React.FC = () => {
         <div className="space-y-6">
           {/* Approval Timeline */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <ApprovalTimeline currentStage={data.currentStage} approvalHistory={data.approvalHistory} />
+            <ApprovalTimeline currentStage={data.currentStage} approvalHistory={data.approvalHistory} isBAPP={true} />
           </div>
 
           {/* Actions */}
@@ -189,14 +203,16 @@ const BAPPDetail: React.FC = () => {
                   onClick={handleApprove}
                   className="w-full bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
                 >
-                  Setujui Dokumen
+                  {getApproveButtonText()}
                 </button>
-                <button
-                  onClick={handleReject}
-                  className="w-full bg-white text-red-600 border border-red-200 py-2.5 rounded-lg hover:bg-red-50 transition-colors font-medium"
-                >
-                  Tolak Dokumen
-                </button>
+                {canReject() && (
+                  <button
+                    onClick={handleReject}
+                    className="w-full bg-white text-red-600 border border-red-200 py-2.5 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                  >
+                    Tolak Dokumen
+                  </button>
+                )}
               </div>
             </div>
           )}

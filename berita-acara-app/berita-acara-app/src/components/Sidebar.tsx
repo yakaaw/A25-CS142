@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, FileText, File, FilePlus, LogOut, Shield, Users } from "lucide-react";
+import { Home, FileText, File, LogOut, Shield, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Sidebar: React.FC = () => {
@@ -9,11 +9,10 @@ const Sidebar: React.FC = () => {
   const { logout, permissions } = useAuth();
 
   const menuItems = [
-    { to: "/dashboard", label: "Dashboard", icon: Home },
-    { to: "/bapb", label: "BAPB", icon: FileText },
-    { to: "/bapp", label: "BAPP", icon: FileText },
-    { to: "/status-berkas", label: "Status Berkas", icon: File },
-    { to: "/tambah-laporan", label: "Tambah Laporan", icon: FilePlus },
+    { to: "/dashboard", label: "Dashboard", icon: Home, permission: null },
+    { to: "/bapb", label: "BAPB", icon: FileText, permission: 'bapb.view' },
+    { to: "/bapp", label: "BAPP", icon: FileText, permission: 'bapp.view' },
+    { to: "/status-berkas", label: "Status Berkas", icon: File, permission: null },
   ];
 
   const adminItems = [
@@ -33,6 +32,13 @@ const Sidebar: React.FC = () => {
     <aside className="sidebar-vertical">
       <nav className="sidebar-nav-vertical">
         {menuItems.map((item) => {
+          if (item.permission && !permissions.includes(item.permission)) {
+            if (item.to === "/tambah-laporan" && (permissions.includes('bapb.create') || permissions.includes('bapp.create'))) {
+              // Allow if has either create permission
+            } else {
+              return null;
+            }
+          }
           const isActive =
             location.pathname === item.to ||
             (item.to === "/dashboard" && location.pathname === "/");

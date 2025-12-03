@@ -12,15 +12,15 @@ interface ApprovalLog {
 interface ApprovalTimelineProps {
     currentStage?: string;
     approvalHistory?: ApprovalLog[];
+    isBAPP?: boolean;
 }
 
-const STAGES = [
-    { id: 'vendor_submit', label: 'Vendor Submission' },
-    { id: 'pic_review', label: 'Review PIC Gudang' },
-    { id: 'direksi_review', label: 'Approval Direksi' }
-];
-
-const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({ currentStage, approvalHistory = [] }) => {
+const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({ currentStage, approvalHistory = [], isBAPP = false }) => {
+    const STAGES = [
+        { id: 'vendor_submit', label: 'Vendor Submission' },
+        { id: 'pic_review', label: isBAPP ? 'Review PIC Pemesan' : 'Review PIC Gudang' },
+        { id: 'direksi_review', label: 'Approval Direksi' }
+    ];
     // Helper functions removed as they were unused
 
     return (

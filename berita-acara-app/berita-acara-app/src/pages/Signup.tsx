@@ -82,7 +82,7 @@ const SignupPage: React.FC = () => {
             >
               <option value="vendor">Vendor</option>
               <option value="pic_gudang">PIC Gudang</option>
-              <option value="pemesan">Pemesan</option>
+              <option value="pic_pemesan">PIC Pemesan</option>
               <option value="direksi">Direksi</option>
             </select>
           </div>

@@ -32,10 +32,15 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState } = useForm<any>({
+  const { control, handleSubmit, formState, setValue } = useForm<any>({
     resolver: yupResolver(schema),
     defaultValues: { vendorId: initial.vendorId || '', items: initial.items || [] }
   });
+
+  // Sync items state with form
+  React.useEffect(() => {
+    setValue('items', items);
+  }, [items, setValue]);
 
   const onSubmit = async (vals: any) => {
     setError(null);

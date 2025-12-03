@@ -1,15 +1,10 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { BAPB } from '../services/bapbService';
 import { BAPP } from '../services/bappService';
 
-// Extend jsPDF type to include autoTable
-interface JsPDFWithAutoTable extends jsPDF {
-    autoTable: (options: any) => jsPDF;
-}
-
 export const generateBAPBPDF = (data: BAPB) => {
-    const doc = new jsPDF() as JsPDFWithAutoTable;
+    const doc = new jsPDF();
 
     // Header
     doc.setFontSize(16);
@@ -39,14 +34,14 @@ export const generateBAPBPDF = (data: BAPB) => {
         tableRows.push(itemData);
     });
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: 65,
         head: [tableColumn],
         body: tableRows,
     });
 
     // Signatures
-    const finalY = (doc as any).lastAutoTable.finalY + 30;
+    const finalY = 120; // Approximate position after table
 
     doc.text('Diserahkan Oleh,', 40, finalY, { align: 'center' });
     doc.text('Diterima Oleh,', 170, finalY, { align: 'center' });
@@ -62,7 +57,7 @@ export const generateBAPBPDF = (data: BAPB) => {
 };
 
 export const generateBAPPPDF = (data: BAPP) => {
-    const doc = new jsPDF() as JsPDFWithAutoTable;
+    const doc = new jsPDF();
 
     // Header
     doc.setFontSize(16);
@@ -90,14 +85,14 @@ export const generateBAPPPDF = (data: BAPP) => {
         tableRows.push(itemData);
     });
 
-    doc.autoTable({
+    autoTable(doc, {
         startY: 65,
         head: [tableColumn],
         body: tableRows,
     });
 
     // Signatures
-    const finalY = (doc as any).lastAutoTable.finalY + 30;
+    const finalY = 120; // Approximate position after table
 
     doc.text('Diserahkan Oleh,', 40, finalY, { align: 'center' });
     doc.text('Diperiksa Oleh,', 170, finalY, { align: 'center' });

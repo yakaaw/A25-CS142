@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createRole, getRoleByName } from '../../services/roleService';
+import { createRole, getRoleByName, updateRole } from '../../services/roleService';
 import { useToast } from '../../context/ToastContext';
 import { Database } from 'lucide-react';
 
@@ -7,26 +7,27 @@ const DEFAULT_ROLES = [
     {
         name: 'admin',
         permissions: [
-            'admin.access',
+            'admin.access', 'manage_users', 'manage_roles',
             'bapb.view', 'bapb.create', 'bapb.edit', 'bapb.delete', 'bapb.approve', 'bapb.reject',
-            'bapp.view', 'bapp.create', 'bapp.edit', 'bapp.delete', 'bapp.approve', 'bapp.reject'
+            'bapp.view', 'bapp.create', 'bapp.edit', 'bapp.delete', 'bapp.approve', 'bapp.reject',
+            'ba.initiate', 'ba.view_all', 'master.manage'
         ]
     },
     {
         name: 'vendor',
-        permissions: ['bapb.view', 'bapb.create', 'bapp.view', 'bapp.create']
+        permissions: ['bapb.view', 'bapb.create', 'bapb.edit', 'bapp.view', 'bapp.create', 'bapp.edit']
     },
     {
         name: 'pic_gudang',
-        permissions: ['bapb.view', 'bapb.approve', 'bapb.reject']
+        permissions: ['bapb.view', 'bapb.verify', 'bapb.publish', 'bapb.reject']
     },
     {
-        name: 'pemesan',
-        permissions: ['bapp.view', 'bapp.approve', 'bapp.reject']
+        name: 'pic_pemesan',
+        permissions: ['bapp.view', 'bapp.verify', 'bapp.publish', 'bapp.reject']
     },
     {
         name: 'direksi',
-        permissions: ['bapb.view', 'bapp.view', 'bapb.approve', 'bapp.approve']
+        permissions: ['bapb.view', 'bapp.view', 'bapb.approve', 'bapp.approve', 'bapb.reject', 'bapp.reject']
     }
 ];
 
@@ -50,7 +51,15 @@ const SeedRoles: React.FC = () => {
                 const existing = await getRoleByName(role.name);
 
                 if (existing.success && existing.data) {
-                    addLog(`Role '${role.name}' already exists. Skipping.`);
+                    addLog(`Role '${role.name}' already exists. Updating permissions...`);
+                    const updateResult = await updateRole(existing.data.id!, {
+                        permissions: role.permissions
+                    });
+                    if (updateResult.success) {
+                        addLog(`Role '${role.name}' updated successfully.`);
+                    } else {
+                        addLog(`Failed to update role '${role.name}': ${updateResult.error}`);
+                    }
                 } else {
                     addLog(`Creating role '${role.name}'...`);
                     const result = await createRole({

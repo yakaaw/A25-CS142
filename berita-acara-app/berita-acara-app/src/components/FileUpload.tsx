@@ -13,6 +13,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
     const [progress, setProgress] = useState(0);
     const [preview, setPreview] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
+    const [dragOver, setDragOver] = useState(false);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -41,12 +42,53 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
         setProgress(0);
     };
 
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragOver(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragOver(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            setUploading(true);
+            setProgress(0);
+            setFileName(file.name);
+
+            try {
+                const url = await uploadFile(file, path, (p) => setProgress(p));
+                setPreview(url);
+                onUploadComplete(url);
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('Upload failed. Please try again.');
+                setFileName(null);
+            } finally {
+                setUploading(false);
+            }
+        }
+    };
+
     return (
         <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
 
             {preview === null ? (
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors relative">
+                <div
+                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg transition-colors relative ${
+                        dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                >
                     <div className="space-y-1 text-center">
                         {uploading ? (
                             <div className="flex flex-col items-center w-full">
@@ -58,14 +100,18 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
                         ) : (
                             <>
                                 <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                <div className="flex text-sm text-gray-600 justify-center">
-                                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>Upload a file</span>
-                                        <input type="file" className="sr-only" onChange={handleFileChange} accept="image/*,application/pdf" />
-                                    </label>
-                                    <p className="pl-1">or drag and drop</p>
+                                <div className="text-center">
+                                    <div className="text-sm text-gray-600">
+                                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                            <span>Upload a file</span>
+                                            <input type="file" className="sr-only" onChange={handleFileChange} accept="image/*,application/pdf" />
+                                        </label>
+                                    </div>
+                                    <div className="text-sm text-gray-600 mt-4">
+                                        or drag and drop
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-4">PNG, JPG, PDF up to 10MB</p>
                                 </div>
-                                <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
                             </>
                         )}
                     </div>

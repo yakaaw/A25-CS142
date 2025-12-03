@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { getBAPBById, approveBAPB, rejectBAPB, BAPB } from '../../services/bapbService';
 import { useAuth } from '../../context/AuthContext';
@@ -11,32 +11,47 @@ const BAPBDetail: React.FC = () => {
   const [data, setData] = useState<BAPB | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { userProfile } = useAuth();
+  const { userProfile, permissions } = useAuth();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!id) return;
     const res = await getBAPBById(id);
     if (res.success) setData(res.data ?? null);
     else setError(res.error || 'Dokumen tidak ditemukan');
     setLoading(false);
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, [id, fetchData]);
 
   const handleApprove = async () => {
     if (!id || !userProfile?.uid) return;
 
+    console.log('handleApprove called with:', {
+      id,
+      userProfile: {
+        uid: userProfile.uid,
+        name: userProfile.name,
+        role: userProfile.role
+      }
+    });
+
     const notes = prompt('Catatan approval (opsional):');
 
-    await approveBAPB(id, {
+    const result = await approveBAPB(id, {
       uid: userProfile.uid,
       name: userProfile.name || userProfile.email || 'Unknown',
       role: userProfile.role || 'unknown'
     }, notes || undefined);
 
-    fetchData();
+    console.log('approveBAPB result:', result);
+
+    if (result.success) {
+      fetchData();
+    } else {
+      alert('Error: ' + result.error);
+    }
   };
 
   const handleReject = async () => {
@@ -54,13 +69,32 @@ const BAPBDetail: React.FC = () => {
   };
 
   const canApprove = () => {
-    if (!data || !userProfile) return false;
+    console.log('canApprove check:', {
+      data: !!data,
+      permissions,
+      hasVerify: permissions.includes('bapb.verify'),
+      hasApprove: permissions.includes('bapb.approve'),
+      currentStage: data?.currentStage,
+      status: data?.status
+    });
+
+    if (!data || (!permissions.includes('bapb.verify') && !permissions.includes('bapb.approve'))) return false;
     if (data.status === 'rejected') return false;
 
-    if (data.currentStage === 'waiting_pic' && userProfile.role === 'pic_gudang') return true;
-    if (data.currentStage === 'waiting_direksi' && userProfile.role === 'direksi') return true;
-
+    // PIC Gudang can verify at waiting_pic, Direksi can approve at waiting_direksi
+    if (permissions.includes('bapb.verify') && data.currentStage === 'waiting_pic') return true;
+    if (permissions.includes('bapb.approve') && data.currentStage === 'waiting_direksi') return true;
     return false;
+  };
+
+  const canReject = () => {
+    return canApprove(); // Same logic for reject
+  };
+
+  const getApproveButtonText = () => {
+    if (permissions.includes('bapb.verify')) return 'Verifikasi & Terbitkan';
+    if (permissions.includes('bapb.approve')) return 'Setujui Dokumen';
+    return 'Setujui';
   };
 
   if (loading) return <div className="detail-loading">Loading...</div>;
@@ -193,14 +227,16 @@ const BAPBDetail: React.FC = () => {
                   onClick={handleApprove}
                   className="w-full bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
                 >
-                  Setujui Dokumen
+                  {getApproveButtonText()}
                 </button>
-                <button
-                  onClick={handleReject}
-                  className="w-full bg-white text-red-600 border border-red-200 py-2.5 rounded-lg hover:bg-red-50 transition-colors font-medium"
-                >
-                  Tolak Dokumen
-                </button>
+                {canReject() && (
+                  <button
+                    onClick={handleReject}
+                    className="w-full bg-white text-red-600 border border-red-200 py-2.5 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                  >
+                    Tolak Dokumen
+                  </button>
+                )}
               </div>
             </div>
           )}

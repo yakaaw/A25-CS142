@@ -98,7 +98,7 @@ export const approveBAPP = async (id: string, actor: { uid: string, name: string
     let nextStage = currentStage;
     let newStatus = data.status;
 
-    if (currentStage === 'waiting_pic' && role === 'pic_gudang') {
+    if (currentStage === 'waiting_pic' && role === 'pic_pemesan') {
       nextStage = 'waiting_direksi';
       history.push({
         stage: 'pic_review',

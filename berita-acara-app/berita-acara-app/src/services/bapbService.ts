@@ -156,6 +156,15 @@ export const approveBAPB = async (id: string, actor: { uid: string, name: string
     const currentStage = data.currentStage; // Assuming currentStage is available from data
     const role = actor.role; // Assuming role is available from actor
 
+    console.log('approveBAPB debug:', {
+      currentStage,
+      role,
+      actor,
+      check1: currentStage === 'waiting_pic',
+      check2: role === 'pic_gudang',
+      condition: currentStage === 'waiting_pic' && role === 'pic_gudang'
+    });
+
     let nextStage = currentStage;
     let newStatus = data.status;
     let authorizedAction = false;
@@ -170,6 +179,7 @@ export const approveBAPB = async (id: string, actor: { uid: string, name: string
         timestamp: new Date().toISOString(),
         notes
       });
+      authorizedAction = true;
     } else if (currentStage === 'waiting_direksi' && role === 'direksi') {
       nextStage = 'approved';
       newStatus = 'approved';

@@ -31,10 +31,15 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState } = useForm<any>({
+  const { control, handleSubmit, formState, setValue } = useForm<any>({
     resolver: yupResolver(schema),
     defaultValues: { vendorId: initial.vendorId || '', workDetails: initial.workDetails || [] }
   });
+
+  // Sync workDetails state with form
+  React.useEffect(() => {
+    setValue('workDetails', workDetails);
+  }, [workDetails, setValue]);
 
   const onSubmit = async (vals: any) => {
     setError(null);
