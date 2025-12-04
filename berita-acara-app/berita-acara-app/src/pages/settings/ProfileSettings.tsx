@@ -1,7 +1,22 @@
 import React, { useState } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    TextField,
+    Button,
+    Typography,
+    Stack,
+    CircularProgress,
+    Divider,
+} from '@mui/material';
+import {
+    Person as PersonIcon,
+    Lock as LockIcon,
+    Save as SaveIcon,
+} from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { User, Lock, Save } from 'lucide-react';
 
 const ProfileSettings: React.FC = () => {
     const { userProfile, updateUserProfile, changePassword } = useAuth();
@@ -53,120 +68,155 @@ const ProfileSettings: React.FC = () => {
     };
 
     return (
-        <div className="page-enter max-w-4xl mx-auto p-6">
-            <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">Pengaturan Profil</h2>
-                <p className="text-gray-500">Kelola informasi akun dan keamanan Anda</p>
-            </div>
+        <Box sx={{ maxWidth: 900, mx: 'auto', p: 3 }}>
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h4" fontWeight={700} gutterBottom>
+                    Pengaturan Profil
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                    Kelola informasi akun dan keamanan Anda
+                </Typography>
+            </Box>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
+                    gap: 3,
+                }}
+            >
                 {/* Profile Information Card */}
-                <div className="glass-card p-6">
-                    <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                            <User size={20} />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Informasi Dasar</h3>
-                    </div>
-
-                    <form onSubmit={handleUpdateProfile} className="space-y-4">
-                        <div className="form-group">
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input
-                                id="email"
-                                type="email"
-                                value={userProfile?.email || ''}
-                                disabled
-                                className="glass-input w-full bg-gray-50 text-gray-500 cursor-not-allowed"
-                            />
-                            <p className="text-xs text-gray-400 mt-1">Email tidak dapat diubah</p>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
-                            <input
-                                id="fullName"
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                className="glass-input w-full"
-                                placeholder="Masukkan nama lengkap"
-                            />
-                        </div>
-
-                        <div className="pt-2">
-                            <button
-                                type="submit"
-                                disabled={loadingProfile}
-                                className="glass-button w-full flex items-center justify-center gap-2"
+                <Card elevation={2}>
+                    <CardContent sx={{ p: 3 }}>
+                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                            <Box
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 2,
+                                    bgcolor: 'primary.light',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'primary.main',
+                                }}
                             >
-                                {loadingProfile ? (
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <>
-                                        <Save size={18} />
-                                        Simpan Perubahan
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                                <PersonIcon />
+                            </Box>
+                            <Typography variant="h6" fontWeight={600}>
+                                Informasi Dasar
+                            </Typography>
+                        </Stack>
+                        <Divider sx={{ mb: 3 }} />
+
+                        <Box component="form" onSubmit={handleUpdateProfile}>
+                            <Stack spacing={2.5}>
+                                <TextField
+                                    fullWidth
+                                    label="Email"
+                                    type="email"
+                                    value={userProfile?.email || ''}
+                                    disabled
+                                    helperText="Email tidak dapat diubah"
+                                />
+
+                                <TextField
+                                    fullWidth
+                                    label="Nama Lengkap"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Masukkan nama lengkap"
+                                />
+
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    fullWidth
+                                    disabled={loadingProfile}
+                                    startIcon={
+                                        loadingProfile ? (
+                                            <CircularProgress size={20} color="inherit" />
+                                        ) : (
+                                            <SaveIcon />
+                                        )
+                                    }
+                                    sx={{ mt: 1 }}
+                                >
+                                    {loadingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                </Button>
+                            </Stack>
+                        </Box>
+                    </CardContent>
+                </Card>
 
                 {/* Security Card */}
-                <div className="glass-card p-6">
-                    <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                        <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-                            <Lock size={20} />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-900">Keamanan</h3>
-                    </div>
-
-                    <form onSubmit={handleChangePassword} className="space-y-4">
-                        <div className="form-group">
-                            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
-                            <input
-                                id="newPassword"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="glass-input w-full"
-                                placeholder="Minimal 6 karakter"
-                            />
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Konfirmasi Password</label>
-                            <input
-                                id="confirmPassword"
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="glass-input w-full"
-                                placeholder="Ulangi password baru"
-                            />
-                        </div>
-
-                        <div className="pt-2">
-                            <button
-                                type="submit"
-                                disabled={loadingPassword || !password}
-                                className="glass-button w-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center gap-2"
+                <Card elevation={2}>
+                    <CardContent sx={{ p: 3 }}>
+                        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                            <Box
+                                sx={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 2,
+                                    bgcolor: 'secondary.light',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'secondary.main',
+                                }}
                             >
-                                {loadingPassword ? (
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <>
-                                        <Save size={18} />
-                                        Ubah Password
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+                                <LockIcon />
+                            </Box>
+                            <Typography variant="h6" fontWeight={600}>
+                                Keamanan
+                            </Typography>
+                        </Stack>
+                        <Divider sx={{ mb: 3 }} />
+
+                        <Box component="form" onSubmit={handleChangePassword}>
+                            <Stack spacing={2.5}>
+                                <TextField
+                                    fullWidth
+                                    label="Password Baru"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Minimal 6 karakter"
+                                />
+
+                                <TextField
+                                    fullWidth
+                                    label="Konfirmasi Password"
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="Ulangi password baru"
+                                />
+
+                                <Button
+                                    type="submit"
+                                    variant="contained"
+                                    color="secondary"
+                                    fullWidth
+                                    disabled={loadingPassword || !password}
+                                    startIcon={
+                                        loadingPassword ? (
+                                            <CircularProgress size={20} color="inherit" />
+                                        ) : (
+                                            <SaveIcon />
+                                        )
+                                    }
+                                    sx={{ mt: 1 }}
+                                >
+                                    {loadingPassword ? 'Mengubah...' : 'Ubah Password'}
+                                </Button>
+                            </Stack>
+                        </Box>
+                    </CardContent>
+                </Card>
+            </Box>
+        </Box>
     );
 };
 
