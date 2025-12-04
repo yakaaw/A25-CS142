@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
+import {
+    Box,
+    Button,
+    Typography,
+    LinearProgress,
+    Paper,
+    IconButton,
+} from '@mui/material';
+import {
+    CloudUpload as UploadIcon,
+    Close as CloseIcon,
+    Description as FileIcon,
+    Image as ImageIcon,
+} from '@mui/icons-material';
 import { uploadFile } from '../services/storageService';
 
 interface FileUploadProps {
@@ -16,23 +29,27 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
     const [dragOver, setDragOver] = useState(false);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setUploading(true);
-            setProgress(0);
-            setFileName(file.name);
+        const file = e.target.files?.[0];
+        if (file) {
+            await processFile(file);
+        }
+    };
 
-            try {
-                const url = await uploadFile(file, path, (p) => setProgress(p));
-                setPreview(url);
-                onUploadComplete(url);
-            } catch (error) {
-                console.error('Upload failed:', error);
-                alert('Upload failed. Please try again.');
-                setFileName(null);
-            } finally {
-                setUploading(false);
-            }
+    const processFile = async (file: File) => {
+        setUploading(true);
+        setProgress(0);
+        setFileName(file.name);
+
+        try {
+            const url = await uploadFile(file, path, (p) => setProgress(p));
+            setPreview(url);
+            onUploadComplete(url);
+        } catch (error) {
+            console.error('Upload failed:', error);
+            alert('Upload failed. Please try again.');
+            setFileName(null);
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -56,83 +73,105 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
         e.preventDefault();
         setDragOver(false);
 
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const file = e.dataTransfer.files[0];
-            setUploading(true);
-            setProgress(0);
-            setFileName(file.name);
-
-            try {
-                const url = await uploadFile(file, path, (p) => setProgress(p));
-                setPreview(url);
-                onUploadComplete(url);
-            } catch (error) {
-                console.error('Upload failed:', error);
-                alert('Upload failed. Please try again.');
-                setFileName(null);
-            } finally {
-                setUploading(false);
-            }
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            await processFile(file);
         }
     };
 
     return (
-        <div className="w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <Box sx={{ width: '100%' }}>
+            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+                {label}
+            </Typography>
 
             {preview === null ? (
-                <div
-                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg transition-colors relative ${
-                        dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'
-                    }`}
+                <Paper
+                    variant="outlined"
+                    sx={{
+                        p: 3,
+                        textAlign: 'center',
+                        borderStyle: 'dashed',
+                        borderWidth: 2,
+                        borderColor: dragOver ? 'primary.main' : 'grey.300',
+                        bgcolor: dragOver ? 'action.hover' : 'background.paper',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                            borderColor: 'primary.main',
+                        },
+                    }}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                 >
-                    <div className="space-y-1 text-center">
-                        {uploading ? (
-                            <div className="flex flex-col items-center w-full">
-                                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-                                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                                </div>
-                                <p className="text-sm text-gray-500">Uploading... {Math.round(progress)}%</p>
-                            </div>
-                        ) : (
-                            <>
-                                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                <div className="text-center">
-                                    <div className="text-sm text-gray-600">
-                                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                            <span>Upload a file</span>
-                                            <input type="file" className="sr-only" onChange={handleFileChange} accept="image/*,application/pdf" />
-                                        </label>
-                                    </div>
-                                    <div className="text-sm text-gray-600 mt-4">
-                                        or drag and drop
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-4">PNG, JPG, PDF up to 10MB</p>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
+                    {uploading ? (
+                        <Box sx={{ width: '100%' }}>
+                            <LinearProgress variant="determinate" value={progress} sx={{ mb: 1 }} />
+                            <Typography variant="body2" color="text.secondary">
+                                Uploading... {Math.round(progress)}%
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <>
+                            <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                            <Button variant="contained" component="label">
+                                Upload a file{' '}
+                                <input
+                                    type="file"
+                                    hidden
+                                    onChange={handleFileChange}
+                                    accept="image/*,application/pdf"
+                                />
+                            </Button>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                                or drag and drop
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                PNG, JPG, PDF up to 10MB
+                            </Typography>
+                        </>
+                    )}
+                </Paper>
             ) : (
-                <div className="mt-2 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                            {fileName?.toLowerCase().endsWith('.pdf') ? <FileText size={20} /> : <ImageIcon size={20} />}
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{fileName}</p>
-                            <p className="text-xs text-green-600">Upload complete</p>
-                        </div>
-                    </div>
-                    <button onClick={handleRemove} className="text-gray-400 hover:text-red-500 transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
+                <Paper
+                    variant="outlined"
+                    sx={{
+                        p: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                    }}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box
+                            sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 1,
+                                bgcolor: 'primary.light',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'primary.main',
+                            }}
+                        >
+                            {fileName?.toLowerCase().endsWith('.pdf') ? <FileIcon /> : <ImageIcon />}
+                        </Box>
+                        <Box>
+                            <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: 300 }}>
+                                {fileName}
+                            </Typography>
+                            <Typography variant="caption" color="success.main">
+                                Upload complete
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <IconButton onClick={handleRemove} size="small" color="error">
+                        <CloseIcon />
+                    </IconButton>
+                </Paper>
             )}
-        </div>
+        </Box>
     );
 };
 

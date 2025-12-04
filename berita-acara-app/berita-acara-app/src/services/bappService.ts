@@ -96,7 +96,7 @@ export const approveBAPP = async (id: string, actor: { uid: string, name: string
     const currentStage = data.currentStage;
     const role = actor.role;
 
-    let nextStage = currentStage;
+    let nextStage: string | undefined;
     let newStatus = data.status;
 
     if (currentStage === 'waiting_pic' && role === 'pic_pemesan') {

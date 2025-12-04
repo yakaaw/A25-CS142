@@ -1,10 +1,25 @@
 import React from 'react';
-import { Plus, Trash2, Briefcase } from 'lucide-react';
+import {
+  Box,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  IconButton,
+  Typography,
+  Paper,
+} from '@mui/material';
+import { Add as AddIcon, Delete as DeleteIcon, Work as WorkIcon } from '@mui/icons-material';
 
 interface WorkDetail {
   description: string;
   hours?: number | '';
   notes?: string;
+  tempId?: string;
 }
 
 interface Props {
@@ -14,7 +29,7 @@ interface Props {
 
 const WorkDetailsEditor: React.FC<Props> = ({ details, onChange }) => {
   const handleAdd = () => {
-    onChange([...details, { description: '', hours: '', notes: '' }]);
+    onChange([...details, { description: '', hours: '', notes: '', tempId: Math.random().toString(36).substring(2, 11) }]);
   };
 
   const handleRemove = (index: number) => {
@@ -30,64 +45,82 @@ const WorkDetailsEditor: React.FC<Props> = ({ details, onChange }) => {
   };
 
   return (
-    <div className="items-editor">
-      <div className="items-editor-header">
-        <button type="button" onClick={handleAdd} className="items-add-btn">
-          <Plus size={16} />
-          <span>Tambah Pekerjaan</span>
-        </button>
-      </div>
+    <Box>
+      <Box sx={{ mb: 2 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
+          Tambah Pekerjaan
+        </Button>
+      </Box>
 
       {details.length === 0 ? (
-        <div className="items-empty">
-          <Briefcase size={32} className="items-empty-icon" />
-          <p>Belum ada detail pekerjaan</p>
-          <span>Klik tombol "Tambah Pekerjaan" untuk menambahkan detail baru</span>
-        </div>
+        <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+          <WorkIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="body1" fontWeight={600} gutterBottom>
+            Belum ada detail pekerjaan
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Klik tombol "Tambah Pekerjaan" untuk menambahkan detail baru
+          </Typography>
+        </Paper>
       ) : (
-        <div className="items-list">
-          <div className="work-table-header">
-            <span className="work-col-desc">Deskripsi Pekerjaan</span>
-            <span className="work-col-hours">Jam</span>
-            <span className="work-col-notes">Catatan</span>
-            <span className="work-col-action"></span>
-          </div>
-          {details.map((d, idx) => (
-            <div key={idx} className="items-row">
-              <div className="items-row-number">{idx + 1}</div>
-              <input
-                className="items-input work-input-desc"
-                placeholder="Masukkan deskripsi pekerjaan"
-                value={d.description}
-                onChange={(e) => handleChange(idx, 'description', e.target.value)}
-              />
-              <input
-                className="items-input work-input-hours"
-                placeholder="0"
-                type="number"
-                min={0}
-                value={d.hours as any}
-                onChange={(e) => handleChange(idx, 'hours', e.target.value === '' ? '' : Number(e.target.value))}
-              />
-              <input
-                className="items-input work-input-notes"
-                placeholder="Catatan singkat"
-                value={d.notes}
-                onChange={(e) => handleChange(idx, 'notes', e.target.value)}
-              />
-              <button
-                type="button"
-                className="items-remove-btn"
-                onClick={() => handleRemove(idx)}
-                title="Hapus pekerjaan"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell width={50}>#</TableCell>
+                <TableCell>Deskripsi Pekerjaan</TableCell>
+                <TableCell width={100}>Jam</TableCell>
+                <TableCell width={200}>Catatan</TableCell>
+                <TableCell width={80} align="center">
+                  Aksi
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {details.map((d, idx) => (
+                <TableRow key={d.tempId || idx}>
+                  <TableCell>{idx + 1}</TableCell>
+                  <TableCell>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Masukkan deskripsi pekerjaan"
+                      value={d.description}
+                      onChange={(e) => handleChange(idx, 'description', e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      placeholder="0"
+                      slotProps={{ htmlInput: { min: 0 } }}
+                      value={d.hours}
+                      onChange={(e) => handleChange(idx, 'hours', e.target.value === '' ? '' : Number(e.target.value))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Catatan singkat"
+                      value={d.notes}
+                      onChange={(e) => handleChange(idx, 'notes', e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton size="small" color="error" onClick={() => handleRemove(idx)} title="Hapus pekerjaan">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </div>
+    </Box>
   );
 };
 

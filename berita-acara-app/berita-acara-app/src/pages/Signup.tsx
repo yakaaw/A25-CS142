@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
+import {
+  Container,
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Link as MuiLink,
+  MenuItem,
+} from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './Login.css';
 
 const SignupPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -31,75 +42,97 @@ const SignupPage: React.FC = () => {
   };
 
   return (
-    <div
-      className="page-bg-glass auth-page"
-      style={{
-        backgroundImage: `linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%), url('/bg.jpg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        p: 2,
       }}
     >
-      <div className="glass-container">
-        <form className="glass-form" onSubmit={handleSubmit}>
-          <h2>Daftar - Reportify</h2>
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-          <div className="input-group">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nama Lengkap"
-              required
-            />
-          </div>
-          <div className="input-group">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              required
-            />
-          </div>
-          <div className="input-group">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-            />
-          </div>
-          <div className="input-group">
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="vendor">Vendor</option>
-              <option value="pic_gudang">PIC Gudang</option>
-              <option value="pic_pemesan">PIC Pemesan</option>
-              <option value="direksi">Direksi</option>
-            </select>
-          </div>
-          <button type="submit" disabled={loading}>
-            {loading ? 'Mendaftar...' : 'Daftar'}
-          </button>
-          <div className="form-footer">
-            <p className="auth-footer-text">
-              Sudah punya akun?{' '}
-              <Link to="/login" className="auth-link auth-link-blue">
-                Login di sini
-              </Link>
-            </p>
-          </div>
-        </form>
-      </div>
-    </div>
+      <Container maxWidth="sm">
+        <Card elevation={8}>
+          <CardContent sx={{ p: 4 }}>
+            <Typography variant="h4" component="h1" fontWeight={700} textAlign="center" gutterBottom>
+              Daftar - Reportify
+            </Typography>
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+              <TextField
+                fullWidth
+                label="Nama Lengkap"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                margin="normal"
+              />
+
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                margin="normal"
+                autoComplete="email"
+              />
+
+              <TextField
+                fullWidth
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                margin="normal"
+                autoComplete="new-password"
+              />
+
+              <TextField
+                fullWidth
+                select
+                label="Role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                margin="normal"
+              >
+                <MenuItem value="vendor">Vendor</MenuItem>
+                <MenuItem value="pic_gudang">PIC Gudang</MenuItem>
+                <MenuItem value="pic_pemesan">PIC Pemesan</MenuItem>
+                <MenuItem value="direksi">Direksi</MenuItem>
+              </TextField>
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{ mt: 3, mb: 2 }}
+              >
+                {loading ? 'Mendaftar...' : 'Daftar'}
+              </Button>
+
+              <Typography variant="body2" textAlign="center" color="text.secondary">
+                Sudah punya akun?{' '}
+                <MuiLink component={Link} to="/login" underline="hover">
+                  Login di sini
+                </MuiLink>
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };
 

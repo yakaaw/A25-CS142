@@ -2,8 +2,7 @@ import {
     collection,
     doc,
     getDocs,
-    updateDoc,
-    DocumentData
+    updateDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserProfile } from '../context/AuthContext';

@@ -1,5 +1,19 @@
 import React from 'react';
-import { Plus, Trash2, Package } from 'lucide-react';
+import {
+  Box,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  IconButton,
+  Typography,
+  Paper,
+} from '@mui/material';
+import { Add as AddIcon, Delete as DeleteIcon, Inventory as InventoryIcon } from '@mui/icons-material';
 
 interface Item {
   id?: string;
@@ -7,7 +21,7 @@ interface Item {
   qty: number | '';
   unit: string;
   condition?: string;
-  tempId?: string; // For UI key only
+  tempId?: string;
 }
 
 interface Props {
@@ -22,7 +36,7 @@ const ItemsEditor: React.FC<Props> = ({ items, onChange }) => {
       qty: 1,
       unit: '',
       condition: '',
-      tempId: Math.random().toString(36).substr(2, 9)
+      tempId: Math.random().toString(36).substring(2, 11),
     };
     onChange([...items, next]);
   };
@@ -40,71 +54,92 @@ const ItemsEditor: React.FC<Props> = ({ items, onChange }) => {
   };
 
   return (
-    <div className="items-editor">
-      <div className="items-editor-header">
-        <button type="button" onClick={handleAdd} className="items-add-btn">
-          <Plus size={16} />
-          <span>Tambah Item</span>
-        </button>
-      </div>
+    <Box>
+      <Box sx={{ mb: 2 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>
+          Tambah Item
+        </Button>
+      </Box>
 
       {items.length === 0 ? (
-        <div className="items-empty">
-          <Package size={32} className="items-empty-icon" />
-          <p>Belum ada item ditambahkan</p>
-          <span>Klik tombol "Tambah Item" untuk menambahkan item baru</span>
-        </div>
+        <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'grey.50' }}>
+          <InventoryIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="body1" fontWeight={600} gutterBottom>
+            Belum ada item ditambahkan
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Klik tombol "Tambah Item" untuk menambahkan item baru
+          </Typography>
+        </Paper>
       ) : (
-        <div className="items-list">
-          <div className="items-table-header">
-            <span className="items-col-desc">Deskripsi Item</span>
-            <span className="items-col-qty">Qty</span>
-            <span className="items-col-unit">Unit</span>
-            <span className="items-col-cond">Kondisi</span>
-            <span className="items-col-action"></span>
-          </div>
-          {items.map((it, idx) => (
-            <div key={it.id || it.tempId || idx} className="items-row">
-              <div className="items-row-number">{idx + 1}</div>
-              <input
-                className="items-input items-input-desc"
-                placeholder="Masukkan deskripsi item"
-                value={it.description}
-                onChange={(e) => handleChange(idx, 'description', e.target.value)}
-              />
-              <input
-                className="items-input items-input-qty"
-                placeholder="0"
-                type="number"
-                min={0}
-                value={it.qty as any}
-                onChange={(e) => handleChange(idx, 'qty', e.target.value === '' ? '' : Number(e.target.value))}
-              />
-              <input
-                className="items-input items-input-unit"
-                placeholder="pcs"
-                value={it.unit}
-                onChange={(e) => handleChange(idx, 'unit', e.target.value)}
-              />
-              <input
-                className="items-input items-input-cond"
-                placeholder="Baik"
-                value={it.condition}
-                onChange={(e) => handleChange(idx, 'condition', e.target.value)}
-              />
-              <button
-                type="button"
-                className="items-remove-btn"
-                onClick={() => handleRemove(idx)}
-                title="Hapus item"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell width={50}>#</TableCell>
+                <TableCell>Deskripsi Item</TableCell>
+                <TableCell width={100}>Qty</TableCell>
+                <TableCell width={120}>Unit</TableCell>
+                <TableCell width={150}>Kondisi</TableCell>
+                <TableCell width={80} align="center">
+                  Aksi
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((it, idx) => (
+                <TableRow key={it.id || it.tempId || idx}>
+                  <TableCell>{idx + 1}</TableCell>
+                  <TableCell>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Masukkan deskripsi item"
+                      value={it.description}
+                      onChange={(e) => handleChange(idx, 'description', e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      placeholder="0"
+                      slotProps={{ htmlInput: { min: 0 } }}
+                      value={it.qty}
+                      onChange={(e) => handleChange(idx, 'qty', e.target.value === '' ? '' : Number(e.target.value))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="pcs"
+                      value={it.unit}
+                      onChange={(e) => handleChange(idx, 'unit', e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      placeholder="Baik"
+                      value={it.condition}
+                      onChange={(e) => handleChange(idx, 'condition', e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton size="small" color="error" onClick={() => handleRemove(idx)} title="Hapus item">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </div>
+    </Box>
   );
 };
 

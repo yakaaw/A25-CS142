@@ -1,16 +1,27 @@
-import React from "react";
-import Navbar from "./Navbar";
-import Sidebar from "./Sidebar";
+import React from 'react';
+import { Box } from '@mui/material';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="app-layout">
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
-      <div className="app-body">
+      <Box sx={{ display: 'flex', flex: 1 }}>
         <Sidebar />
-        <main className="app-main">{children}</main>
-      </div>
-    </div>
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 3,
+            ml: '240px', // Sidebar width
+            mt: '64px', // AppBar height
+          }}
+        >
+          {children}
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

@@ -1,71 +1,125 @@
-import React, { useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { Link } from "react-router-dom";
-import { Bell, User, ChevronDown, LogOut, Settings } from "lucide-react";
+import React, { useState } from 'react';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Menu,
+  MenuItem,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Box,
+} from '@mui/material';
+import {
+  Notifications as NotificationsIcon,
+  AccountCircle as AccountCircleIcon,
+  Settings as SettingsIcon,
+  Logout as LogoutIcon,
+} from '@mui/icons-material';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   const { userProfile, logout } = useAuth();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const isMenuOpen = Boolean(anchorEl);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleLogout = async () => {
     try {
       await logout();
+      handleMenuClose();
     } catch (err) {
-      console.error("Logout failed", err);
+      console.error('Logout failed', err);
     }
   };
 
+  const handleSettings = () => {
+    navigate('/settings/profile');
+    handleMenuClose();
+  };
+
   return (
-    <header className="navbar-new">
-      <div className="navbar-brand-new">
-        <h1 className="navbar-title-new">Berita Acara System</h1>
-      </div>
+    <AppBar position="sticky" color="primary" elevation={1}>
+      <Toolbar>
+        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          Berita Acara System
+        </Typography>
 
-      <div className="navbar-actions">
-        <button className="navbar-icon-btn">
-          <Bell className="navbar-icon-svg" />
-        </button>
-        <button className="navbar-icon-btn">
-          <User className="navbar-icon-svg" />
-        </button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton color="inherit" size="large">
+            <NotificationsIcon />
+          </IconButton>
 
-        <div className="navbar-user-section">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="navbar-user-btn"
+          <IconButton
+            color="inherit"
+            size="large"
+            onClick={handleMenuOpen}
+            aria-controls={isMenuOpen ? 'account-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={isMenuOpen ? 'true' : undefined}
           >
-            <span className="navbar-user-name">
-              {userProfile?.name || userProfile?.email || "Guest"}
-            </span>
-            <ChevronDown className={`navbar-chevron-icon ${isDropdownOpen ? 'rotated' : ''}`} />
-          </button>
+            <AccountCircleIcon />
+          </IconButton>
 
-          {isDropdownOpen && (
-            <div className="navbar-dropdown-new">
-              <div className="navbar-dropdown-info">
-                <p className="dropdown-name">{userProfile?.name || "Guest"}</p>
-                <p className="dropdown-email">{userProfile?.email}</p>
-                <p className="dropdown-role">Role: {userProfile?.role || "—"}</p>
-              </div>
+          <Menu
+            id="account-menu"
+            anchorEl={anchorEl}
+            open={isMenuOpen}
+            onClose={handleMenuClose}
+            onClick={handleMenuClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            slotProps={{
+              paper: {
+                elevation: 3,
+                sx: {
+                  minWidth: 220,
+                  mt: 1.5,
+                },
+              },
+            }}
+          >
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {userProfile?.name || 'Guest'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {userProfile?.email}
+              </Typography>
+              <Typography variant="caption" color="primary">
+                Role: {userProfile?.role || '—'}
+              </Typography>
+            </Box>
 
-              <Link to="/settings/profile" className="dropdown-item-btn" onClick={() => setIsDropdownOpen(false)}>
-                <Settings className="dropdown-icon" size={16} />
-                Pengaturan Profil
-              </Link>
+            <Divider />
 
-              <button onClick={handleLogout} className="dropdown-logout-btn">
-                <LogOut className="dropdown-logout-icon" />
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+            <MenuItem onClick={handleSettings}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Pengaturan Profil</ListItemText>
+            </MenuItem>
 
-      {isDropdownOpen && (
-        <div className="navbar-overlay-new" onClick={() => setIsDropdownOpen(false)} />
-      )}
-    </header>
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Logout</ListItemText>
+            </MenuItem>
+          </Menu>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 };
 

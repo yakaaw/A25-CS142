@@ -1,5 +1,17 @@
 import React from 'react';
-import { CheckCircle, Clock, XCircle, Circle } from 'lucide-react';
+import {
+    Box,
+    Typography,
+    Paper,
+    Stack,
+    Avatar,
+} from '@mui/material';
+import {
+    CheckCircle as CheckCircleIcon,
+    Schedule as ScheduleIcon,
+    Cancel as CancelIcon,
+    RadioButtonUnchecked as RadioButtonUncheckedIcon,
+} from '@mui/icons-material';
 
 interface ApprovalLog {
     stage: string;
@@ -19,61 +31,118 @@ const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({ currentStage, appro
     const STAGES = [
         { id: 'vendor_submit', label: 'Vendor Submission' },
         { id: 'pic_review', label: isBAPP ? 'Review PIC Pemesan' : 'Review PIC Gudang' },
-        { id: 'direksi_review', label: 'Approval Direksi' }
+        { id: 'direksi_review', label: 'Approval Direksi' },
     ];
-    // Helper functions removed as they were unused
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />;
+            case 'rejected':
+                return <CancelIcon sx={{ color: 'error.main', fontSize: 32 }} />;
+            case 'current':
+                return <ScheduleIcon sx={{ color: 'primary.main', fontSize: 32 }} />;
+            default:
+                return <RadioButtonUncheckedIcon sx={{ color: 'grey.300', fontSize: 32 }} />;
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return 'success.light';
+            case 'rejected':
+                return 'error.light';
+            case 'current':
+                return 'primary.light';
+            default:
+                return 'grey.100';
+        }
+    };
 
     return (
-        <div className="py-4">
-            <h3 className="text-lg font-semibold mb-4">Status Approval</h3>
-            <div className="relative">
+        <Box sx={{ py: 2 }}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+                Status Approval
+            </Typography>
+            <Box sx={{ position: 'relative' }}>
                 {/* Vertical Line */}
-                <div className="absolute left-2.5 top-0 h-full w-0.5 bg-gray-200 -z-10" />
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        left: 15,
+                        top: 0,
+                        bottom: 0,
+                        width: 2,
+                        bgcolor: 'grey.200',
+                        zIndex: 0,
+                    }}
+                />
 
-                <div className="space-y-6">
-                    {STAGES.map((stage, index) => {
-                        const log = approvalHistory.find(h => h.stage === stage.id);
+                <Stack spacing={3}>
+                    {STAGES.map((stage) => {
+                        const log = approvalHistory.find((h) => h.stage === stage.id);
                         const isCompleted = !!log;
-                        const isCurrent = !isCompleted && (
-                            (stage.id === 'pic_review' && currentStage === 'waiting_pic') ||
-                            (stage.id === 'direksi_review' && currentStage === 'waiting_direksi')
-                        );
+                        const isCurrent =
+                            !isCompleted &&
+                            ((stage.id === 'pic_review' && currentStage === 'waiting_pic') ||
+                                (stage.id === 'direksi_review' && currentStage === 'waiting_direksi'));
 
                         let status = 'upcoming';
                         if (log) status = log.status;
                         else if (isCurrent) status = 'current';
 
                         return (
-                            <div key={stage.id} className="flex gap-4 items-start bg-white p-2 rounded-lg">
-                                <div className="mt-1 bg-white">
-                                    {status === 'approved' && <CheckCircle className="text-green-600 fill-green-100" size={24} />}
-                                    {status === 'rejected' && <XCircle className="text-red-600 fill-red-100" size={24} />}
-                                    {status === 'current' && <Clock className="text-blue-600 animate-pulse" size={24} />}
-                                    {status === 'upcoming' && <Circle className="text-gray-300" size={24} />}
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className={`font-medium ${status === 'current' ? 'text-blue-600' : 'text-gray-900'}`}>
+                            <Paper
+                                key={stage.id}
+                                elevation={status === 'current' ? 3 : 1}
+                                sx={{
+                                    p: 2,
+                                    display: 'flex',
+                                    gap: 2,
+                                    bgcolor: status === 'current' ? getStatusColor(status) : 'background.paper',
+                                    position: 'relative',
+                                    zIndex: 1,
+                                }}
+                            >
+                                <Avatar sx={{ bgcolor: 'background.paper', width: 32, height: 32 }}>
+                                    {getStatusIcon(status)}
+                                </Avatar>
+                                <Box sx={{ flex: 1 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight={600}
+                                        color={status === 'current' ? 'primary.main' : 'text.primary'}
+                                    >
                                         {stage.label}
-                                    </h4>
+                                    </Typography>
                                     {log && (
-                                        <div className="text-sm text-gray-500 mt-1">
-                                            <p>Oleh: <span className="font-medium text-gray-700">{log.actorName}</span></p>
-                                            <p>{new Date(log.timestamp).toLocaleString('id-ID')}</p>
+                                        <Box sx={{ mt: 1 }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Oleh: <strong>{log.actorName}</strong>
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {new Date(log.timestamp).toLocaleString('id-ID')}
+                                            </Typography>
                                             {log.notes && (
-                                                <p className="mt-1 text-gray-600 italic">"{log.notes}"</p>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontStyle: 'italic' }}>
+                                                    "{log.notes}"
+                                                </Typography>
                                             )}
-                                        </div>
+                                        </Box>
                                     )}
                                     {status === 'current' && (
-                                        <p className="text-sm text-blue-500 mt-1">Menunggu persetujuan...</p>
+                                        <Typography variant="body2" color="primary.main" sx={{ mt: 1 }}>
+                                            Menunggu persetujuan...
+                                        </Typography>
                                     )}
-                                </div>
-                            </div>
+                                </Box>
+                            </Paper>
                         );
                     })}
-                </div>
-            </div>
-        </div>
+                </Stack>
+            </Box>
+        </Box>
     );
 };
 

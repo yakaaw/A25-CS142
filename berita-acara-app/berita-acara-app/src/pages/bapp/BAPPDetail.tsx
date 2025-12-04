@@ -1,9 +1,33 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import {
+  Container,
+  Paper,
+  Typography,
+  Box,
+  Button,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Stack,
+  Breadcrumbs,
+  Link as MuiLink,
+  Divider,
+} from '@mui/material';
+import {
+  Print as PrintIcon,
+  AttachFile as AttachFileIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+} from '@mui/icons-material';
+import { useParams, Link } from 'react-router-dom';
 import { getBAPPById, approveBAPP, rejectBAPP, BAPP } from '../../services/bappService';
 import { useAuth } from '../../context/AuthContext';
 import ApprovalTimeline from '../../components/ApprovalTimeline';
-import { Printer, Paperclip } from 'lucide-react';
 import { generateBAPPPDF } from '../../utils/pdfGenerator';
 
 const BAPPDetail: React.FC = () => {
@@ -27,16 +51,23 @@ const BAPPDetail: React.FC = () => {
 
   const handleApprove = async () => {
     if (!id || !userProfile?.uid) return;
-
     const notes = prompt('Catatan approval (opsional):');
 
-    await approveBAPP(id, {
-      uid: userProfile.uid,
-      name: userProfile.name || userProfile.email || 'Unknown',
-      role: userProfile.role || 'unknown'
-    }, notes || undefined);
+    const result = await approveBAPP(
+      id,
+      {
+        uid: userProfile.uid,
+        name: userProfile.name || userProfile.email || 'Unknown',
+        role: userProfile.role || 'unknown',
+      },
+      notes || undefined
+    );
 
-    fetchData();
+    if (result.success) {
+      fetchData();
+    } else {
+      alert('Error: ' + result.error);
+    }
   };
 
   const handleReject = async () => {
@@ -47,7 +78,7 @@ const BAPPDetail: React.FC = () => {
     await rejectBAPP(id, {
       uid: userProfile.uid,
       name: userProfile.name || userProfile.email || 'Unknown',
-      role: userProfile.role || 'unknown'
+      role: userProfile.role || 'unknown',
     }, reason);
 
     fetchData();
@@ -56,15 +87,9 @@ const BAPPDetail: React.FC = () => {
   const canApprove = () => {
     if (!data || (!permissions.includes('bapp.verify') && !permissions.includes('bapp.approve'))) return false;
     if (data.status === 'rejected') return false;
-
-    // Pemesan can verify at waiting_pic, Direksi can approve at waiting_direksi
     if (permissions.includes('bapp.verify') && data.currentStage === 'waiting_pic') return true;
     if (permissions.includes('bapp.approve') && data.currentStage === 'waiting_direksi') return true;
     return false;
-  };
-
-  const canReject = () => {
-    return canApprove(); // Same logic for reject
   };
 
   const getApproveButtonText = () => {
@@ -73,152 +98,206 @@ const BAPPDetail: React.FC = () => {
     return 'Setujui';
   };
 
-  if (loading) return <div className="detail-loading">Loading...</div>;
-  if (error) return <div className="detail-error">{error}</div>;
-  if (!data) return <div className="detail-empty">Tidak ada data</div>;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'warning';
+    }
+  };
+
+  if (loading)
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  if (error) return <Container><Typography color="error">{error}</Typography></Container>;
+  if (!data) return <Container><Typography>Tidak ada data</Typography></Container>;
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <div className="text-sm text-gray-500 mb-1">Dashboard / BAPP / Detail</div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">BAPP Detail</h1>
-            <span className={`status-badge status-${data.status}`}>{data.status}</span>
-          </div>
-        </div>
-        <button
-          onClick={() => data && generateBAPPPDF(data)}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <Printer size={18} />
-          Export PDF
-        </button>
-      </div>
+      <Box sx={{ mb: 3 }}>
+        <Breadcrumbs sx={{ mb: 1 }}>
+          <MuiLink component={Link} to="/dashboard" underline="hover">
+            Dashboard
+          </MuiLink>
+          <MuiLink component={Link} to="/bapp" underline="hover">
+            BAPP
+          </MuiLink>
+          <Typography color="text.primary">Detail</Typography>
+        </Breadcrumbs>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h4" fontWeight={700}>
+              BAPP Detail
+            </Typography>
+            <Chip label={data.status} color={getStatusColor(data.status || 'pending') as any} />
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<PrintIcon />}
+            onClick={() => data && generateBAPPPDF(data)}
+          >
+            Export PDF
+          </Button>
+        </Box>
+      </Box>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 3 }}>
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Document Info Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Informasi Dokumen</h4>
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">ID Dokumen</p>
-                <p className="font-medium text-gray-900">{data.id}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Vendor ID</p>
-                <p className="font-medium text-gray-900">{data.vendorId}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Tanggal Dibuat</p>
-                <p className="font-medium text-gray-900">{new Date(data.createdAt || '').toLocaleString('id-ID')}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Tahapan Saat Ini</p>
-                <p className="font-medium text-gray-900 capitalize">
-                  {data.currentStage === 'waiting_pic' ? 'Menunggu Review Pemesan' :
-                   data.currentStage === 'waiting_direksi' ? 'Menunggu Review Direksi' :
-                   data.currentStage?.replaceAll('_', ' ').replace('waiting', 'Menunggu')}
-                </p>
-              </div>
-            </div>
-          </div>
+        <Stack spacing={3}>
+          {/* Document Info */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Informasi Dokumen
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  ID Dokumen
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {data.id}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Vendor ID
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {data.vendorId}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Tanggal Dibuat
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {new Date(data.createdAt || '').toLocaleString('id-ID')}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Tahapan Saat Ini
+                </Typography>
+                <Typography variant="body1" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                  {data.currentStage?.replaceAll('_', ' ').replace('waiting', 'Menunggu')}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
 
-          {/* Work Details Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Detail Pekerjaan</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 text-gray-500 uppercase">
-                  <tr>
-                    <th className="px-4 py-3 rounded-l-lg">Deskripsi Pekerjaan</th>
-                    <th className="px-4 py-3">Jam</th>
-                    <th className="px-4 py-3 rounded-r-lg">Catatan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {data.workDetails?.map((item, idx) => (
-                    <tr key={`${item.description}-${item.hours}`} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{item.description}</td>
-                      <td className="px-4 py-3">{item.hours}</td>
-                      <td className="px-4 py-3 text-gray-500">{item.notes}</td>
-                    </tr>
+          {/* Work Details */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Detail Pekerjaan
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Deskripsi</TableCell>
+                    <TableCell>Jam</TableCell>
+                    <TableCell>Catatan</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {data.workDetails?.map((detail, idx) => (
+                    <TableRow key={`work-${idx}-${detail.description}`} hover>
+                      <TableCell sx={{ fontWeight: 600 }}>{detail.description}</TableCell>
+                      <TableCell>{detail.hours || '-'}</TableCell>
+                      <TableCell>{detail.notes || '-'}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
 
-          {/* Notes Card */}
+          {/* Notes */}
           {data.notes && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Catatan</h4>
-              <p className="text-gray-600 bg-gray-50 p-4 rounded-lg">{data.notes}</p>
-            </div>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Catatan
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1 }}>
+                {data.notes}
+              </Typography>
+            </Paper>
           )}
 
-          {/* Attachments Card */}
+          {/* Attachments */}
           {data.attachments && data.attachments.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Lampiran</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Lampiran
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Stack spacing={1}>
                 {data.attachments.map((url, idx) => (
-                  <a
-                    key={`${url}-${idx}`}
+                  <Button
+                    key={`attachment-${idx}-${url.substring(url.length - 20)}`}
+                    component="a"
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+                    variant="outlined"
+                    startIcon={<AttachFileIcon />}
+                    sx={{ justifyContent: 'flex-start' }}
                   >
-                    <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 group-hover:bg-blue-200 transition-colors">
-                      <Paperclip size={20} />
-                    </div>
-                    <div className="overflow-hidden">
-                      <p className="text-sm font-medium text-gray-900 truncate">Lampiran {idx + 1}</p>
-                      <p className="text-xs text-blue-600">Klik untuk melihat</p>
-                    </div>
-                  </a>
+                    Lampiran {idx + 1}
+                  </Button>
                 ))}
-              </div>
-            </div>
+              </Stack>
+            </Paper>
           )}
-        </div>
+        </Stack>
 
-        {/* Sidebar Content */}
-        <div className="space-y-6">
+        {/* Sidebar */}
+        <Stack spacing={3}>
           {/* Approval Timeline */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <Paper sx={{ p: 3 }}>
             <ApprovalTimeline currentStage={data.currentStage} approvalHistory={data.approvalHistory} isBAPP={true} />
-          </div>
+          </Paper>
 
           {/* Actions */}
           {canApprove() && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Tindakan</h4>
-              <div className="flex flex-col gap-3">
-                <button
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Tindakan
+              </Typography>
+              <Stack spacing={2}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  fullWidth
+                  startIcon={<CheckCircleIcon />}
                   onClick={handleApprove}
-                  className="w-full bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm flex justify-center items-center gap-2"
                 >
                   {getApproveButtonText()}
-                </button>
-                {canReject() && (
-                  <button
-                    onClick={handleReject}
-                    className="w-full bg-white text-red-600 border border-red-200 py-2.5 rounded-lg hover:bg-red-50 transition-colors font-medium"
-                  >
-                    Tolak Dokumen
-                  </button>
-                )}
-              </div>
-            </div>
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  startIcon={<CancelIcon />}
+                  onClick={handleReject}
+                >
+                  Tolak Dokumen
+                </Button>
+              </Stack>
+            </Paper>
           )}
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Box>
+    </Container>
   );
 };
 

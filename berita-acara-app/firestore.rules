@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // Helper Functions
+    // ============================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function getUserRole() {
+      return getUserData().role;
+    }
+    
+    function isAdmin() {
+      return getUserRole() == 'admin';
+    }
+    
+    function isPICGudang() {
+      return getUserRole() == 'pic_gudang';
+    }
+    
+    function isPICPemesan() {
+      return getUserRole() == 'pic_pemesan';
+    }
+    
+    function isDireksi() {
+      return getUserRole() == 'direksi';
+    }
+    
+    function isVendor() {
+      return getUserRole() == 'vendor';
+    }
+    
+    // ============================================
+    // Users Collection
+    // ============================================
+    match /users/{userId} {
+      // Anyone authenticated can read all users (needed for member list, vendor selection, etc)
+      allow read: if isAuthenticated();
+      
+      // Users can update their own profile
+      // Admins can update any user
+      allow update: if isAuthenticated() && 
+        (request.auth.uid == userId || isAdmin());
+      
+      // Only authenticated users can create (signup)
+      allow create: if isAuthenticated();
+      
+      // Only admins can delete users
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // ============================================
+    // Roles Collection
+    // ============================================
+    match /roles/{roleId} {
+      // Anyone authenticated can read roles (needed for permissions)
+      allow read: if isAuthenticated();
+      
+      // Only admins can manage roles
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // ============================================
+    // BAPB Collection (Berita Acara Penerimaan Barang)
+    // ============================================
+    match /bapb/{bapbId} {
+      // Read access:
+      // - Vendor can read their own BAPB
+      // - PIC Gudang, Direksi, Admin can read all
+      allow read: if isAuthenticated() && (
+        resource.data.vendorId == request.auth.uid ||
+        isPICGudang() ||
+        isDireksi() ||
+        isAdmin()
+      );
+      
+      // Create access:
+      // - Vendor can create BAPB with their own vendorId
+      // - Admin can create any BAPB
+      allow create: if isAuthenticated() && (
+        (isVendor() && request.resource.data.vendorId == request.auth.uid) ||
+        isAdmin()
+      );
+      
+      // Update access:
+      // - Vendor can update their own BAPB if still in draft
+      // - PIC Gudang can approve/reject when waiting_pic
+      // - Direksi can approve/reject when waiting_direksi
+      // - Admin can update any BAPB
+      allow update: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        (isPICGudang() && resource.data.currentStage == 'waiting_pic') ||
+        (isDireksi() && resource.data.currentStage == 'waiting_direksi') ||
+        isAdmin()
+      );
+      
+      // Delete access:
+      // - Vendor can delete their own BAPB if still in draft
+      // - Admin can delete any BAPB
+      allow delete: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        isAdmin()
+      );
+    }
+    
+    // ============================================
+    // BAPP Collection (Berita Acara Pelaksanaan Pekerjaan)
+    // ============================================
+    match /bapp/{bappId} {
+      // Read access:
+      // - Vendor can read their own BAPP
+      // - PIC Pemesan, Direksi, Admin can read all
+      allow read: if isAuthenticated() && (
+        resource.data.vendorId == request.auth.uid ||
+        isPICPemesan() ||
+        isDireksi() ||
+        isAdmin()
+      );
+      
+      // Create access:
+      // - Vendor can create BAPP with their own vendorId
+      // - Admin can create any BAPP
+      allow create: if isAuthenticated() && (
+        (isVendor() && request.resource.data.vendorId == request.auth.uid) ||
+        isAdmin()
+      );
+      
+      // Update access:
+      // - Vendor can update their own BAPP if still in draft
+      // - PIC Pemesan can approve/reject when waiting_pic
+      // - Direksi can approve/reject when waiting_direksi
+      // - Admin can update any BAPP
+      allow update: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        (isPICPemesan() && resource.data.currentStage == 'waiting_pic') ||
+        (isDireksi() && resource.data.currentStage == 'waiting_direksi') ||
+        isAdmin()
+      );
+      
+      // Delete access:
+      // - Vendor can delete their own BAPP if still in draft
+      // - Admin can delete any BAPP
+      allow delete: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        isAdmin()
+      );
+    }
+    
+    // ============================================
+    // Audit Logs Collection (Future implementation)
+    // ============================================
+    match /audit_logs/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAuthenticated() && isAdmin();
+      
+      // System can write audit logs (via Cloud Functions)
+      // Users cannot directly write audit logs
+      allow write: if false;
+    }
+  }
+}

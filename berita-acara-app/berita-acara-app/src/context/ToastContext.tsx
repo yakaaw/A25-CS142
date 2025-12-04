@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
-import Toast, { ToastType } from '../components/Toast';
+import { Snackbar, Alert, AlertColor } from '@mui/material';
+
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface ToastData {
     id: string;
@@ -37,18 +39,24 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     return (
         <ToastContext.Provider value={value}>
             {children}
-            <div className="toast-container">
-                {toasts.map((toast) => (
-                    <Toast
-                        key={toast.id}
-                        id={toast.id}
-                        type={toast.type}
-                        message={toast.message}
-                        duration={toast.duration}
-                        onClose={removeToast}
-                    />
-                ))}
-            </div>
+            {toasts.map((toast) => (
+                <Snackbar
+                    key={toast.id}
+                    open={true}
+                    autoHideDuration={toast.duration}
+                    onClose={() => removeToast(toast.id)}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                    <Alert
+                        onClose={() => removeToast(toast.id)}
+                        severity={toast.type as AlertColor}
+                        variant="filled"
+                        sx={{ width: '100%' }}
+                    >
+                        {toast.message}
+                    </Alert>
+                </Snackbar>
+            ))}
         </ToastContext.Provider>
     );
 };

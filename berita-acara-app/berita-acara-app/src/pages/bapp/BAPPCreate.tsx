@@ -1,26 +1,29 @@
 import React from 'react';
+import { Container, Typography, Box, Paper } from '@mui/material';
+import { Description as DescriptionIcon } from '@mui/icons-material';
 import BAPPForm from '../../components/BAPPForm';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList } from 'lucide-react';
 
 const BAPPCreate: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="create-page">
-      <div className="create-header">
-        <div className="create-icon">
-          <ClipboardList size={24} />
-        </div>
-        <div>
-          <h1 className="create-title">Buat BAPP Baru</h1>
-          <p className="create-subtitle">Isi formulir di bawah untuk membuat Berita Acara Pelaksanaan Pekerjaan</p>
-        </div>
-      </div>
-      <div className="create-form-container">
-        <BAPPForm onSaved={(id) => navigate(`/bapp/${id}`)} />
-      </div>
-    </div>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <DescriptionIcon color="primary" sx={{ fontSize: 32 }} />
+          <Box>
+            <Typography variant="h4" fontWeight={700}>
+              Buat BAPP Baru
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Isi formulir di bawah untuk membuat Berita Acara Penyelesaian Pekerjaan
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+      <BAPPForm onSaved={(id) => navigate(`/bapp/${id}`)} />
+    </Container>
   );
 };
 

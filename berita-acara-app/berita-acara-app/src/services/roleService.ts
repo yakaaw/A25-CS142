@@ -3,12 +3,10 @@ import {
     addDoc,
     updateDoc,
     doc,
-    getDoc,
     getDocs,
     deleteDoc,
     query,
-    where,
-    DocumentData
+    where
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -57,7 +55,7 @@ export const getAllRoles = async () => {
     try {
         const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
         const roles: RoleData[] = [];
-        querySnapshot.forEach((d) => roles.push({ id: d.id, ...(d.data() as DocumentData) } as RoleData));
+        querySnapshot.forEach((d) => roles.push({ id: d.id, ...d.data() } as RoleData));
         return { success: true, data: roles };
     } catch (error: any) {
         console.error('Error getting roles:', error);
@@ -71,7 +69,7 @@ export const getRoleByName = async (name: string) => {
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             const d = querySnapshot.docs[0];
-            return { success: true, data: { id: d.id, ...(d.data() as DocumentData) } as RoleData };
+            return { success: true, data: { id: d.id, ...d.data() } as RoleData };
         }
         return { success: false, error: 'Role not found' };
     } catch (error: any) {

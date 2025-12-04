@@ -1,8 +1,25 @@
 import React, { useEffect, useState } from 'react';
+import {
+    Container,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography,
+    Box,
+    CircularProgress,
+    TextField,
+    MenuItem,
+    Chip,
+    Stack,
+} from '@mui/material';
+import { People as PeopleIcon } from '@mui/icons-material';
 import { getAllUsers, updateUserRole } from '../../services/userService';
 import { UserProfile } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { Users } from 'lucide-react';
 
 const MemberList: React.FC = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
@@ -34,74 +51,92 @@ const MemberList: React.FC = () => {
         }
     };
 
-    return (
-        <div className="list-page page-enter">
-            <div className="list-container">
-                <div className="list-header">
-                    <div className="list-title-group">
-                        <div className="list-icon float-animation">
-                            <Users size={28} />
-                        </div>
-                        <div>
-                            <h3 className="list-title text-gradient">Manajemen Anggota</h3>
-                            <p className="text-gray-500 text-sm mt-1">Kelola role dan akses pengguna</p>
-                        </div>
-                    </div>
-                </div>
+    const getRoleColor = (role: string) => {
+        switch (role) {
+            case 'admin':
+                return 'error';
+            case 'direksi':
+                return 'primary';
+            case 'pic_gudang':
+            case 'pemesan':
+                return 'info';
+            default:
+                return 'default';
+        }
+    };
 
-                <div className="glass-card list-card">
-                    {loading ? (
-                        <div className="list-loading-container">
-                            <div className="loading-spinner"></div>
-                            <p className="loading-text">Loading Users...</p>
-                        </div>
-                    ) : (
-                        <div className="table-wrapper">
-                            <table className="glass-table">
-                                <thead>
-                                    <tr>
-                                        <th>Email</th>
-                                        <th>Nama</th>
-                                        <th>Bergabung</th>
-                                        <th>Role</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {users.map((user, index) => (
-                                        <tr key={user.uid || user.email} style={{ animationDelay: `${index * 0.05}s` }} className="animate-fadeIn">
-                                            <td>
-                                                <div className="font-medium text-gray-900">{user.email}</div>
-                                            </td>
-                                            <td>{user.name || '-'}</td>
-                                            <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('id-ID') : '-'}</td>
-                                            <td>
-                                                <span className={`role-badge role-${user.role} px-3 py-1 rounded-full text-xs font-medium capitalize bg-opacity-20`}>
-                                                    {user.role?.replace('_', ' ')}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <select
-                                                    value={user.role}
-                                                    onChange={(e) => user.uid && handleRoleChange(user.uid, e.target.value)}
-                                                    className="bg-white/50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                >
-                                                    <option value="vendor">Vendor</option>
-                                                    <option value="pic_gudang">PIC Gudang</option>
-                                                    <option value="pemesan">Pemesan</option>
-                                                    <option value="direksi">Direksi</option>
-                                                    <option value="admin">Admin</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+    if (loading)
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+                <Stack alignItems="center" spacing={2}>
+                    <CircularProgress />
+                    <Typography>Loading Users...</Typography>
+                </Stack>
+            </Box>
+        );
+
+    return (
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <PeopleIcon color="primary" sx={{ fontSize: 32 }} />
+                <Box>
+                    <Typography variant="h4" fontWeight={700}>
+                        Manajemen Anggota
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Kelola role dan akses pengguna
+                    </Typography>
+                </Box>
+            </Box>
+
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Email</TableCell>
+                            <TableCell>Nama</TableCell>
+                            <TableCell>Bergabung</TableCell>
+                            <TableCell>Role</TableCell>
+                            <TableCell>Aksi</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {users.map((user) => (
+                            <TableRow key={user.uid || user.email} hover>
+                                <TableCell sx={{ fontWeight: 600 }}>{user.email}</TableCell>
+                                <TableCell>{user.name || '-'}</TableCell>
+                                <TableCell>
+                                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('id-ID') : '-'}
+                                </TableCell>
+                                <TableCell>
+                                    <Chip
+                                        label={user.role?.replace('_', ' ')}
+                                        size="small"
+                                        color={getRoleColor(user.role || '') as any}
+                                        sx={{ textTransform: 'capitalize' }}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <TextField
+                                        select
+                                        size="small"
+                                        value={user.role}
+                                        onChange={(e) => user.uid && handleRoleChange(user.uid, e.target.value)}
+                                        sx={{ minWidth: 150 }}
+                                    >
+                                        <MenuItem value="vendor">Vendor</MenuItem>
+                                        <MenuItem value="pic_gudang">PIC Gudang</MenuItem>
+                                        <MenuItem value="pemesan">Pemesan</MenuItem>
+                                        <MenuItem value="direksi">Direksi</MenuItem>
+                                        <MenuItem value="admin">Admin</MenuItem>
+                                    </TextField>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Container>
     );
 };
 

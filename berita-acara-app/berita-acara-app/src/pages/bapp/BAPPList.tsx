@@ -1,7 +1,25 @@
 import React, { useEffect, useState } from 'react';
+import {
+  Container,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Chip,
+  Typography,
+  Box,
+  CircularProgress,
+  TextField,
+  MenuItem,
+  Stack,
+} from '@mui/material';
+import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon } from '@mui/icons-material';
 import { getAllBAPP, BAPP } from '../../services/bappService';
 import { Link } from 'react-router-dom';
-import { Filter } from 'lucide-react';
 
 const BAPPList: React.FC = () => {
   const [list, setList] = useState<BAPP[]>([]);
@@ -18,13 +36,13 @@ const BAPPList: React.FC = () => {
     const res = await getAllBAPP({
       limit: 10,
       status: filterStatus,
-      lastDoc: isLoadMore ? lastDoc : undefined
+      lastDoc: isLoadMore ? lastDoc : undefined,
     });
 
     if (res.success) {
       const newData = res.data ?? [];
       if (isLoadMore) {
-        setList(prev => [...prev, ...newData]);
+        setList((prev) => [...prev, ...newData]);
       } else {
         setList(newData);
       }
@@ -40,114 +58,103 @@ const BAPPList: React.FC = () => {
     load();
   }, [filterStatus]);
 
-  if (loading) return (
-    <div className="list-loading-container">
-      <div className="loading-container glass-card">
-        <div className="loading-spinner"></div>
-        <p className="loading-text">Loading BAPP...</p>
-        <div className="loading-dots">
-          <div className="loading-dot"></div>
-          <div className="loading-dot" style={{ animationDelay: '0.1s' }}></div>
-          <div className="loading-dot" style={{ animationDelay: '0.2s' }}></div>
-        </div>
-      </div>
-    </div>
-  );
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'warning';
+    }
+  };
+
+  if (loading)
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress />
+          <Typography>Loading BAPP...</Typography>
+        </Stack>
+      </Box>
+    );
 
   return (
-    <div className="list-page page-enter">
-      <div className="list-container">
-        <div className="list-header">
-          <div className="list-title-group">
-            <div className="list-icon float-animation">
-              <span className="mr-2">📋</span>
-            </div>
-            <h3 className="list-title text-gradient">Daftar BAPP</h3>
-          </div>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" fontWeight={700}>
+          📄 Daftar BAPP
+        </Typography>
+        <Stack direction="row" spacing={2}>
+          <TextField
+            select
+            size="small"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            sx={{ minWidth: 150 }}
+            slotProps={{
+              input: {
+                startAdornment: <FilterListIcon sx={{ mr: 1, color: 'action.active' }} />,
+              },
+            }}
+          >
+            <MenuItem value="all">Semua Status</MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="approved">Approved</MenuItem>
+            <MenuItem value="rejected">Rejected</MenuItem>
+          </TextField>
+          <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/bapp/new">
+            Buat BAPP Baru
+          </Button>
+        </Stack>
+      </Box>
 
-          <div className="flex gap-3">
-            <div className="relative">
-              <select
-                className="glass-input pl-10 pr-8 py-2 appearance-none cursor-pointer hover:bg-white/50 transition-colors"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">Semua Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
-            </div>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Vendor</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell align="right">Aksi</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {list.map((b) => (
+              <TableRow key={b.id} hover>
+                <TableCell>{b.id}</TableCell>
+                <TableCell>{b.vendorId}</TableCell>
+                <TableCell>
+                  <Chip label={b.status} size="small" color={getStatusColor(b.status || 'pending') as any} />
+                </TableCell>
+                <TableCell>{new Date(b.createdAt || '').toLocaleDateString('id-ID')}</TableCell>
+                <TableCell align="right">
+                  <Button
+                    component={Link}
+                    to={`/bapp/${b.id}`}
+                    size="small"
+                    startIcon={<VisibilityIcon />}
+                    variant="outlined"
+                  >
+                    Lihat
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-            <Link to="/bapp/new" className="glass-button list-add-btn pulse-glow">
-              <span>➕</span>
-              Buat BAPP baru
-            </Link>
-          </div>
-        </div>
-
-        <div className="glass-card list-card">
-          <div className="table-wrapper">
-            <table className="glass-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Vendor</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((b, index) => (
-                  <tr key={b.id} style={{ animationDelay: `${index * 0.1}s` }} className="animate-fadeIn">
-                    <td>{b.id}</td>
-                    <td>{b.vendorId}</td>
-                    <td>
-                      <span className={`status-badge ${b.status === 'approved' ? 'status-approved' :
-                        b.status === 'rejected' ? 'status-rejected' : 'status-pending'
-                        }`}>
-                        {b.status === 'approved' && '✅ '}
-                        {b.status === 'rejected' && '❌ '}
-                        {b.status === 'pending' && '⏳ '}
-                        {b.status}
-                      </span>
-                    </td>
-                    <td>{new Date(b.createdAt || '').toLocaleDateString('id-ID')}</td>
-                    <td>
-                      <Link to={`/bapp/${b.id}`} className="view-link">
-                        <span className="mr-1">👁️</span>
-                        Lihat
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {hasMore && (
-            <div className="p-4 flex justify-center border-t border-gray-100">
-              <button
-                onClick={() => load(true)}
-                disabled={loadingMore}
-                className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
-              >
-                {loadingMore ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    Memuat...
-                  </>
-                ) : (
-                  'Muat Lebih Banyak'
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      {hasMore && (
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+          <Button onClick={() => load(true)} disabled={loadingMore}>
+            {loadingMore ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
+            {loadingMore ? 'Memuat...' : 'Muat Lebih Banyak'}
+          </Button>
+        </Box>
+      )}
+    </Container>
   );
 };
 
