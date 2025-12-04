@@ -9,7 +9,8 @@ import {
   where,
   orderBy,
   limit,
-  startAfter
+  startAfter,
+  DocumentSnapshot
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -104,7 +105,7 @@ export const getAllBAPB = async (options?: { limit?: number; lastDoc?: any; stat
     const q = query(collection(db, COLLECTION_NAME), ...constraints);
     const querySnapshot = await getDocs(q);
     const bapbList: BAPB[] = [];
-    querySnapshot.forEach((d) => bapbList.push({ id: d.id, ...d.data() } as BAPB));
+    querySnapshot.forEach((d: DocumentSnapshot) => bapbList.push({ id: d.id, ...d.data() } as BAPB));
 
     const lastDoc = querySnapshot.docs.at(-1);
 
@@ -124,7 +125,7 @@ export const getBAPBByVendor = async (vendorId: string) => {
     const q = query(collection(db, COLLECTION_NAME), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     const bapbList: BAPB[] = [];
-    querySnapshot.forEach((d) => bapbList.push({ id: d.id, ...d.data() } as BAPB));
+    querySnapshot.forEach((d: DocumentSnapshot) => bapbList.push({ id: d.id, ...d.data() } as BAPB));
     return { success: true, data: bapbList };
   } catch (error: any) {
     console.error('Error getting BAPB by vendor:', error);

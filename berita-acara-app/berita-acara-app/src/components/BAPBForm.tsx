@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { BAPB, createBAPB } from '../services/bapbService';
+import { BAPB, createBAPB, BAPBItem } from '../services/bapbService';
 import ItemsEditor from './ItemsEditor';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, ControllerRenderProps } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Save, AlertCircle } from 'lucide-react';
 import FileUpload from './FileUpload';
+
+interface BAPBFormData {
+  vendorId: string;
+  items: BAPBItem[];
+}
 
 interface Props {
   initial?: Partial<BAPB>;
@@ -19,10 +24,13 @@ const schema = yup.object({
     .of(
       yup.object({
         description: yup.string().required('Deskripsi item wajib'),
-        qty: yup.number().min(0)
+        qty: yup.number().min(0).required('Qty wajib'),
+        unit: yup.string().required('Unit wajib'),
+        condition: yup.string().optional()
       })
     )
     .min(1, 'Minimal 1 item')
+    .required('Daftar item wajib diisi')
 });
 
 const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
@@ -32,7 +40,7 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState, setValue } = useForm<any>({
+  const { control, handleSubmit, formState, setValue } = useForm<BAPBFormData>({
     resolver: yupResolver(schema),
     defaultValues: { vendorId: initial.vendorId || '', items: initial.items || [] }
   });
@@ -42,7 +50,7 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
     setValue('items', items);
   }, [items, setValue]);
 
-  const onSubmit = async (vals: any) => {
+  const onSubmit = async (vals: BAPBFormData) => {
     setError(null);
     setLoading(true);
 
@@ -77,7 +85,7 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
           <Controller
             control={control}
             name="vendorId"
-            render={({ field }) => (
+            render={({ field }: { field: ControllerRenderProps<BAPBFormData, 'vendorId'> }) => (
               <input
                 {...field}
                 className="form-input"

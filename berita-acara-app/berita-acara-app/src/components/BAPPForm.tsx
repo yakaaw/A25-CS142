@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { BAPP, createBAPP } from '../services/bappService';
+import { BAPP, createBAPP, BAPPWorkDetail } from '../services/bappService';
 import WorkDetailsEditor from './WorkDetailsEditor';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, ControllerRenderProps } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Save, AlertCircle } from 'lucide-react';
 import FileUpload from './FileUpload';
+
+interface BAPPFormData {
+  vendorId: string;
+  workDetails: BAPPWorkDetail[];
+}
 
 interface Props {
   initial?: Partial<BAPP>;
@@ -18,10 +23,13 @@ const schema = yup.object({
     .array()
     .of(
       yup.object({
-        description: yup.string().required('Deskripsi pekerjaan wajib')
+        description: yup.string().required('Deskripsi pekerjaan wajib'),
+        hours: yup.number().optional(),
+        notes: yup.string().optional()
       })
     )
     .min(1, 'Minimal 1 detail pekerjaan')
+    .required('Detail pekerjaan wajib diisi')
 });
 
 const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
@@ -31,7 +39,7 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { control, handleSubmit, formState, setValue } = useForm<any>({
+  const { control, handleSubmit, formState, setValue } = useForm<BAPPFormData>({
     resolver: yupResolver(schema),
     defaultValues: { vendorId: initial.vendorId || '', workDetails: initial.workDetails || [] }
   });
@@ -41,7 +49,7 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
     setValue('workDetails', workDetails);
   }, [workDetails, setValue]);
 
-  const onSubmit = async (vals: any) => {
+  const onSubmit = async (vals: BAPPFormData) => {
     setError(null);
     setLoading(true);
 
@@ -76,7 +84,7 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
           <Controller
             control={control}
             name="vendorId"
-            render={({ field }) => (
+            render={({ field }: { field: ControllerRenderProps<BAPPFormData, 'vendorId'> }) => (
               <input
                 {...field}
                 id="vendorId"

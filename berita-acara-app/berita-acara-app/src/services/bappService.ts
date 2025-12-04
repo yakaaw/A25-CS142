@@ -10,7 +10,8 @@ import {
   where,
   orderBy,
   limit,
-  startAfter
+  startAfter,
+  DocumentSnapshot
 } from 'firebase/firestore';
 
 export interface BAPPWorkDetail {
@@ -206,7 +207,7 @@ export const getAllBAPP = async (options?: { limit?: number; lastDoc?: any; stat
     const q = query(collection(db, COLLECTION_NAME), ...constraints);
     const querySnapshot = await getDocs(q);
     const bappList: BAPP[] = [];
-    querySnapshot.forEach((d) => bappList.push({ id: d.id, ...d.data() } as BAPP));
+    querySnapshot.forEach((d: DocumentSnapshot) => bappList.push({ id: d.id, ...d.data() } as BAPP));
 
     const lastDoc = querySnapshot.docs.at(-1);
 
@@ -226,7 +227,7 @@ export const getBAPPByVendor = async (vendorId: string) => {
     const q = query(collection(db, COLLECTION_NAME), where('vendorId', '==', vendorId), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     const bappList: BAPP[] = [];
-    querySnapshot.forEach((d) => bappList.push({ id: d.id, ...d.data() } as BAPP));
+    querySnapshot.forEach((d: DocumentSnapshot) => bappList.push({ id: d.id, ...d.data() } as BAPP));
     return { success: true, data: bappList };
   } catch (error: any) {
     console.error('Error getting BAPP by vendor:', error);
