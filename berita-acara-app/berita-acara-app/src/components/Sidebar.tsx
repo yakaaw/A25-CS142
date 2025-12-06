@@ -20,6 +20,7 @@ import {
   Shield as ShieldIcon,
   People as PeopleIcon,
   Settings as SettingsIcon,
+  Archive as ArchiveIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +37,7 @@ const Sidebar: React.FC = () => {
     { to: '/bapb', label: 'BAPB', icon: DescriptionIcon, permission: 'bapb.view' },
     { to: '/bapp', label: 'BAPP', icon: DescriptionIcon, permission: 'bapp.view' },
     { to: '/status-berkas', label: 'Status Berkas', icon: FolderIcon, permission: null },
+    { to: '/archive', label: 'Arsip', icon: ArchiveIcon, permission: 'manage_users' },
   ];
 
   const adminItems = [

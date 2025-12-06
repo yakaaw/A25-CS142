@@ -17,10 +17,14 @@ import {
   MenuItem,
   Stack,
 } from '@mui/material';
-import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon, Search as SearchIcon } from '@mui/icons-material';
-import { getAllBAPP, BAPP } from '../../services/bappService';
-import { Link } from 'react-router-dom';
+import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon, Search as SearchIcon, MoreVert as MoreVertIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { getAllBAPP, BAPP, archiveBAPP } from '../../services/bappService';
+import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { getPendingStatusMessage } from '../../utils/statusHelper';
+import { IconButton, Menu, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material';
 
 const BAPPList: React.FC = () => {
   const [list, setList] = useState<BAPP[]>([]);
@@ -30,6 +34,19 @@ const BAPPList: React.FC = () => {
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Action menu state
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedBAPP, setSelectedBAPP] = useState<BAPP | null>(null);
+
+  // Archive dialog state
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+
+  const { userProfile } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const isAdmin = userProfile?.role === 'admin';
 
   const load = useCallback(async (isLoadMore = false) => {
     if (isLoadMore) setLoadingMore(true);
@@ -81,6 +98,46 @@ const BAPPList: React.FC = () => {
       default:
         return 'warning';
     }
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, bapp: BAPP) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedBAPP(bapp);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleViewDetail = () => {
+    if (selectedBAPP?.id) {
+      navigate(`/bapp/${selectedBAPP.id}`);
+    }
+    handleMenuClose();
+  };
+
+  const handleArchiveClick = () => {
+    setArchiveDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (!selectedBAPP?.id || !userProfile?.uid) return;
+
+    setArchiving(true);
+    const result = await archiveBAPP(selectedBAPP.id, userProfile.uid);
+
+    if (result.success) {
+      showToast('BAPP berhasil diarsipkan', 'success');
+      setArchiveDialogOpen(false);
+      setSelectedBAPP(null);
+      // Reload list
+      load();
+    } else {
+      showToast('Gagal mengarsipkan BAPP', 'error');
+    }
+
+    setArchiving(false);
   };
 
   if (loading)
@@ -161,15 +218,12 @@ const BAPPList: React.FC = () => {
                 </TableCell>
                 <TableCell>{new Date(b.createdAt || '').toLocaleDateString('id-ID')}</TableCell>
                 <TableCell align="right">
-                  <Button
-                    component={Link}
-                    to={`/bapp/${b.id}`}
+                  <IconButton
                     size="small"
-                    startIcon={<VisibilityIcon />}
-                    variant="outlined"
+                    onClick={(e) => handleMenuOpen(e, b)}
                   >
-                    Lihat
-                  </Button>
+                    <MoreVertIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -185,8 +239,76 @@ const BAPPList: React.FC = () => {
           </Button>
         </Box>
       )}
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleViewDetail}>
+          <VisibilityIcon fontSize="small" sx={{ mr: 1 }} />
+          View Detail
+        </MenuItem>
+        <MenuItem
+          onClick={handleArchiveClick}
+          disabled={!isAdmin}
+        >
+          <ArchiveIcon fontSize="small" sx={{ mr: 1 }} />
+          Arsipkan
+        </MenuItem>
+      </Menu>
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog
+        open={archiveDialogOpen}
+        onClose={() => !archiving && setArchiveDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Konfirmasi Arsipkan BAPP</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Alert severity="warning">
+              Dokumen yang diarsipkan akan dipindahkan ke halaman arsip dan tidak akan muncul di daftar utama.
+            </Alert>
+
+            {selectedBAPP && (
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Nomor Dokumen
+                </Typography>
+                <Typography variant="body1" fontWeight={600} gutterBottom>
+                  {selectedBAPP.id}
+                </Typography>
+
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
+                  Status Saat Ini
+                </Typography>
+                <Typography variant="body2">
+                  {getPendingStatusMessage(selectedBAPP.currentStage || 'draft', 'BAPP')}
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setArchiveDialogOpen(false)} disabled={archiving}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleArchiveConfirm}
+            variant="contained"
+            color="warning"
+            disabled={archiving}
+          >
+            {archiving ? 'Mengarsipkan...' : 'Arsipkan'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
 
 export default BAPPList;
+

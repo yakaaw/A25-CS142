@@ -59,6 +59,9 @@ export interface BAPP {
   currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
   approvalHistory?: ApprovalLog[];
   attachments?: string[];
+  isArchived?: boolean;
+  archivedAt?: string;
+  archivedBy?: string;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;
@@ -263,7 +266,14 @@ export const getAllBAPP = async (options?: { limit?: number; lastDoc?: any; stat
     const q = query(collection(db, COLLECTION_NAME), ...constraints);
     const querySnapshot = await getDocs(q);
     const bappList: BAPP[] = [];
-    querySnapshot.forEach((d: DocumentSnapshot) => bappList.push({ id: d.id, ...d.data() } as BAPP));
+
+    // Filter out archived documents on client side
+    querySnapshot.forEach((d: DocumentSnapshot) => {
+      const data = { id: d.id, ...d.data() } as BAPP;
+      if (!data.isArchived) {
+        bappList.push(data);
+      }
+    });
 
     const lastDoc = querySnapshot.docs.at(-1);
 
@@ -287,6 +297,62 @@ export const getBAPPByVendor = async (vendorId: string) => {
     return { success: true, data: bappList };
   } catch (error: any) {
     console.error('Error getting BAPP by vendor:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const archiveBAPP = async (id: string, actorId: string) => {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(docRef, {
+      isArchived: true,
+      archivedAt: new Date().toISOString(),
+      archivedBy: actorId,
+      updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error archiving BAPP:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const getArchivedBAPP = async () => {
+  try {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('isArchived', '==', true)
+    );
+    const querySnapshot = await getDocs(q);
+    const bappList: BAPP[] = [];
+    querySnapshot.forEach((d: DocumentSnapshot) => bappList.push({ id: d.id, ...d.data() } as BAPP));
+
+    // Sort by archivedAt on client-side
+    bappList.sort((a, b) => {
+      const dateA = a.archivedAt ? new Date(a.archivedAt).getTime() : 0;
+      const dateB = b.archivedAt ? new Date(b.archivedAt).getTime() : 0;
+      return dateB - dateA; // descending order
+    });
+
+    return { success: true, data: bappList };
+  } catch (error: any) {
+    console.error('Error getting archived BAPP:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const restoreBAPP = async (id: string) => {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await updateDoc(docRef, {
+      isArchived: false,
+      archivedAt: null,
+      archivedBy: null,
+      updatedAt: new Date().toISOString()
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error restoring BAPP:', error);
     return { success: false, error: error.message };
   }
 };
