@@ -9,6 +9,8 @@ import {
   Divider,
   Typography,
   Box,
+  IconButton,
+  Avatar,
 } from '@mui/material';
 import {
   Home as HomeIcon,
@@ -17,6 +19,7 @@ import {
   Logout as LogoutIcon,
   Shield as ShieldIcon,
   People as PeopleIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -26,7 +29,7 @@ const DRAWER_WIDTH = 240;
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, permissions } = useAuth();
+  const { logout, permissions, userProfile } = useAuth();
 
   const menuItems = [
     { to: '/dashboard', label: 'Dashboard', icon: HomeIcon, permission: null },
@@ -61,83 +64,130 @@ const Sidebar: React.FC = () => {
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',
-          top: '64px', // Height of AppBar
-          height: 'calc(100% - 64px)',
         },
       }}
     >
-      <Box sx={{ overflow: 'auto' }}>
-        <List>
-          {menuItems.map((item) => {
-            // Check permissions
-            if (item.permission && !permissions.includes(item.permission)) {
-              return null;
-            }
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* App Title */}
+        <Box sx={{ p: 2, pb: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }} variant="rounded">
+            <DescriptionIcon fontSize="small" />
+          </Avatar>
+          <Typography variant="subtitle1" component="div" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+            Reportify
+          </Typography>
+        </Box>
+        <Divider />
 
-            const Icon = item.icon;
-            const active = isActive(item.to);
+        {/* Scrollable Menu Area */}
+        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+          <List>
+            {menuItems.map((item) => {
+              // Check permissions
+              if (item.permission && !permissions.includes(item.permission)) {
+                return null;
+              }
 
-            return (
-              <ListItem key={item.to} disablePadding>
-                <ListItemButton
-                  selected={active}
-                  onClick={() => navigate(item.to)}
-                >
-                  <ListItemIcon>
-                    <Icon color={active ? 'primary' : 'inherit'} />
-                  </ListItemIcon>
-                  <ListItemText primary={item.label} />
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
-        </List>
+              const Icon = item.icon;
+              const active = isActive(item.to);
 
-        {/* Admin Section */}
-        {(permissions.includes('manage_users') || permissions.includes('manage_roles')) && (
-          <>
-            <Divider sx={{ my: 1 }} />
-            <Typography
-              variant="overline"
-              sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
+              return (
+                <ListItem key={item.to} disablePadding>
+                  <ListItemButton
+                    selected={active}
+                    onClick={() => navigate(item.to)}
+                  >
+                    <ListItemIcon>
+                      <Icon color={active ? 'primary' : 'inherit'} />
+                    </ListItemIcon>
+                    <ListItemText primary={item.label} />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+
+          {/* Admin Section */}
+          {(permissions.includes('manage_users') || permissions.includes('manage_roles')) && (
+            <>
+              <Divider sx={{ my: 1 }} />
+              <Typography
+                variant="overline"
+                sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}
+              >
+                TEAMS
+              </Typography>
+              <List>
+                {adminItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.to);
+
+                  return (
+                    <ListItem key={item.to} disablePadding>
+                      <ListItemButton
+                        selected={active}
+                        onClick={() => navigate(item.to)}
+                      >
+                        <ListItemIcon>
+                          <Icon color={active ? 'primary' : 'inherit'} />
+                        </ListItemIcon>
+                        <ListItemText primary={item.label} />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            </>
+          )}
+        </Box>
+
+        {/* User Profile Section (Fixed at Bottom) */}
+        <Box>
+          <Divider />
+          <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar
+              src={userProfile?.photoURL}
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: 'primary.main',
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '1.1rem',
+              }}
             >
-              Admin
-            </Typography>
-            <List>
-              {adminItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.to);
+              {!userProfile?.photoURL && (userProfile?.name?.charAt(0).toUpperCase() || 'U')}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle2" fontWeight={600} noWrap>
+                {userProfile?.name || 'Guest'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {userProfile?.role || 'User'}
+              </Typography>
+            </Box>
+            <IconButton
+              size="small"
+              onClick={() => navigate('/settings/profile')}
+              sx={{ color: 'text.secondary' }}
+            >
+              <SettingsIcon fontSize="small" />
+            </IconButton>
+          </Box>
 
-                return (
-                  <ListItem key={item.to} disablePadding>
-                    <ListItemButton
-                      selected={active}
-                      onClick={() => navigate(item.to)}
-                    >
-                      <ListItemIcon>
-                        <Icon color={active ? 'primary' : 'inherit'} />
-                      </ListItemIcon>
-                      <ListItemText primary={item.label} />
-                    </ListItemButton>
-                  </ListItem>
-                );
-              })}
-            </List>
-          </>
-        )}
-
-        {/* Logout Button */}
-        <Divider sx={{ my: 1 }} />
-        <List>
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleLogout} sx={{ color: 'error.main' }}>
-              <ListItemIcon>
-                <LogoutIcon color="error" />
-              </ListItemIcon>
-              <ListItemText primary="Logout" />
-            </ListItemButton>
-          </ListItem>
-        </List>
+          {/* Logout Button */}
+          <Divider />
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleLogout} sx={{ color: 'error.main' }}>
+                <ListItemIcon>
+                  <LogoutIcon color="error" />
+                </ListItemIcon>
+                <ListItemText primary="Logout" />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Box>
       </Box>
     </Drawer>
   );

@@ -8,6 +8,7 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    Button,
     Typography,
     Box,
     CircularProgress,
@@ -15,16 +16,53 @@ import {
     MenuItem,
     Chip,
     Stack,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    IconButton,
+    InputAdornment,
+    Menu,
+    ListItemIcon,
+    ListItemText,
 } from '@mui/material';
-import { People as PeopleIcon } from '@mui/icons-material';
-import { getAllUsers, updateUserRole } from '../../services/userService';
+import {
+    Add as AddIcon,
+    Delete as DeleteIcon,
+    Visibility as VisibilityIcon,
+    VisibilityOff as VisibilityOffIcon,
+    Close as CloseIcon,
+    MoreVert as MoreVertIcon,
+    Edit as EditIcon,
+} from '@mui/icons-material';
+import { getAllUsers, updateUserRole, createUser, deleteUser } from '../../services/userService';
 import { UserProfile } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import PageHeader from '../../components/PageHeader';
 
 const MemberList: React.FC = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const { showToast } = useToast();
+
+    // Add Member State
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newMember, setNewMember] = useState({
+        email: '',
+        password: '',
+        name: '',
+        role: 'vendor',
+    });
+    const [showPassword, setShowPassword] = useState(false);
+    const [creating, setCreating] = useState(false);
+
+    // Menu State
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+
+    // Edit Role State
+    const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
+    const [editRoleValue, setEditRoleValue] = useState('');
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -41,14 +79,75 @@ const MemberList: React.FC = () => {
         fetchUsers();
     }, []);
 
-    const handleRoleChange = async (uid: string, newRole: string) => {
-        const result = await updateUserRole(uid, newRole);
+    const handleRoleChange = async () => {
+        if (!selectedUser?.uid) return;
+
+        const result = await updateUserRole(selectedUser.uid, editRoleValue);
         if (result.success) {
             showToast('Role pengguna berhasil diperbarui', 'success');
             fetchUsers();
+            setIsEditRoleOpen(false);
+            setEditRoleValue('');
+            setSelectedUser(null);
         } else {
             showToast('Gagal memperbarui role', 'error');
         }
+    };
+
+    const handleCreateMember = async () => {
+        if (!newMember.email || !newMember.password || !newMember.name) {
+            showToast('Mohon lengkapi semua field', 'warning');
+            return;
+        }
+
+        setCreating(true);
+        const result = await createUser(newMember.email, newMember.password, {
+            name: newMember.name,
+            role: newMember.role,
+        });
+
+        if (result.success) {
+            showToast('Anggota berhasil ditambahkan', 'success');
+            setIsAddModalOpen(false);
+            setNewMember({ email: '', password: '', name: '', role: 'vendor' });
+            fetchUsers();
+        } else {
+            showToast('Gagal menambahkan anggota: ' + result.error, 'error');
+        }
+        setCreating(false);
+    };
+
+    const handleDeleteMember = async () => {
+        if (!selectedUser?.uid || !selectedUser?.email) return;
+
+        if (window.confirm(`Apakah Anda yakin ingin menghapus anggota ${selectedUser.email}? Akses mereka akan dicabut.`)) {
+            const result = await deleteUser(selectedUser.uid);
+            if (result.success) {
+                showToast('Anggota berhasil dihapus', 'success');
+                fetchUsers();
+            } else {
+                showToast('Gagal menghapus anggota', 'error');
+            }
+        }
+        handleMenuClose();
+    };
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: UserProfile) => {
+        setAnchorEl(event.currentTarget);
+        setSelectedUser(user);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setSelectedUser(null);
+    };
+
+    const handleEditClick = () => {
+        if (selectedUser) {
+            setEditRoleValue(selectedUser.role || 'vendor');
+            setIsEditRoleOpen(true);
+        }
+        setAnchorEl(null); // Keep selectedUser for the dialog
     };
 
     const getRoleColor = (role: string) => {
@@ -77,16 +176,19 @@ const MemberList: React.FC = () => {
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <PeopleIcon color="primary" sx={{ fontSize: 32 }} />
-                <Box>
-                    <Typography variant="h4" fontWeight={700}>
-                        Manajemen Anggota
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Kelola role dan akses pengguna
-                    </Typography>
-                </Box>
+            <PageHeader
+                title="Manajemen Anggota"
+                description="Kelola role dan akses pengguna"
+                breadcrumbs={[
+                    { label: 'Admin', to: '/admin/members' },
+                    { label: 'Anggota' }
+                ]}
+            />
+
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsAddModalOpen(true)}>
+                    Tambah Anggota
+                </Button>
             </Box>
 
             <TableContainer component={Paper}>
@@ -97,7 +199,7 @@ const MemberList: React.FC = () => {
                             <TableCell>Nama</TableCell>
                             <TableCell>Bergabung</TableCell>
                             <TableCell>Role</TableCell>
-                            <TableCell>Aksi</TableCell>
+                            <TableCell align="right">Aksi</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -116,26 +218,141 @@ const MemberList: React.FC = () => {
                                         sx={{ textTransform: 'capitalize' }}
                                     />
                                 </TableCell>
-                                <TableCell>
-                                    <TextField
-                                        select
+                                <TableCell align="right">
+                                    <IconButton
                                         size="small"
-                                        value={user.role}
-                                        onChange={(e) => user.uid && handleRoleChange(user.uid, e.target.value)}
-                                        sx={{ minWidth: 150 }}
+                                        onClick={(e) => handleMenuOpen(e, user)}
                                     >
-                                        <MenuItem value="vendor">Vendor</MenuItem>
-                                        <MenuItem value="pic_gudang">PIC Gudang</MenuItem>
-                                        <MenuItem value="pemesan">Pemesan</MenuItem>
-                                        <MenuItem value="direksi">Direksi</MenuItem>
-                                        <MenuItem value="admin">Admin</MenuItem>
-                                    </TextField>
+                                        <MoreVertIcon />
+                                    </IconButton>
                                 </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Action Menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+            >
+                <MenuItem onClick={handleEditClick}>
+                    <ListItemIcon>
+                        <EditIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Edit Role</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleDeleteMember} sx={{ color: 'error.main' }}>
+                    <ListItemIcon>
+                        <DeleteIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText>Hapus Anggota</ListItemText>
+                </MenuItem>
+            </Menu>
+
+            {/* Edit Role Dialog */}
+            <Dialog open={isEditRoleOpen} onClose={() => setIsEditRoleOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Ubah Role Pengguna</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2" gutterBottom sx={{ mb: 2 }}>
+                            Mengubah role untuk <strong>{selectedUser?.email}</strong>
+                        </Typography>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Role"
+                            value={editRoleValue}
+                            onChange={(e) => setEditRoleValue(e.target.value)}
+                        >
+                            <MenuItem value="vendor">Vendor</MenuItem>
+                            <MenuItem value="pic_gudang">PIC Gudang</MenuItem>
+                            <MenuItem value="pemesan">Pemesan</MenuItem>
+                            <MenuItem value="direksi">Direksi</MenuItem>
+                            <MenuItem value="admin">Admin</MenuItem>
+                        </TextField>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsEditRoleOpen(false)}>Batal</Button>
+                    <Button variant="contained" onClick={handleRoleChange}>
+                        Simpan
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Add Member Dialog */}
+            <Dialog open={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        Tambah Anggota Baru
+                        <IconButton onClick={() => setIsAddModalOpen(false)} size="small">
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField
+                            fullWidth
+                            label="Nama Lengkap"
+                            value={newMember.name}
+                            onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                        />
+                        <TextField
+                            fullWidth
+                            label="Email"
+                            type="email"
+                            value={newMember.email}
+                            onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                        />
+                        <TextField
+                            fullWidth
+                            label="Password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={newMember.password}
+                            onChange={(e) => setNewMember({ ...newMember, password: e.target.value })}
+                            slotProps={{
+                                input: {
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
+                        />
+                        <TextField
+                            select
+                            fullWidth
+                            label="Role"
+                            value={newMember.role}
+                            onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                        >
+                            <MenuItem value="vendor">Vendor</MenuItem>
+                            <MenuItem value="pic_gudang">PIC Gudang</MenuItem>
+                            <MenuItem value="pemesan">Pemesan</MenuItem>
+                            <MenuItem value="direksi">Direksi</MenuItem>
+                            <MenuItem value="admin">Admin</MenuItem>
+                        </TextField>
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsAddModalOpen(false)}>Batal</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleCreateMember}
+                        disabled={creating}
+                        startIcon={creating ? <CircularProgress size={20} /> : null}
+                    >
+                        {creating ? 'Menambahkan...' : 'Tambah Anggota'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 };

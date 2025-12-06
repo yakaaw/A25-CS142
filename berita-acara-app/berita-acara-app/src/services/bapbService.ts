@@ -14,6 +14,16 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
+export interface ApprovalLog {
+  stage: 'vendor_submit' | 'pic_review' | 'direksi_review';
+  status: 'pending' | 'approved' | 'rejected';
+  actorId: string;
+  actorName: string;
+  signatureUrl?: string;
+  timestamp: string;
+  notes?: string;
+}
+
 export interface BAPBItem {
   id?: string;
   description: string;
@@ -22,20 +32,11 @@ export interface BAPBItem {
   condition?: string;
 }
 
-export interface ApprovalLog {
-  stage: 'vendor_submit' | 'pic_review' | 'direksi_review';
-  status: 'pending' | 'approved' | 'rejected';
-  actorId: string;
-  actorName: string;
-  timestamp: string;
-  notes?: string;
-}
-
 export interface BAPB {
   id?: string;
   vendorId?: string;
   items?: BAPBItem[];
-  status?: 'pending' | 'approved' | 'rejected'; // Global status
+  status?: 'pending' | 'approved' | 'rejected';
   currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
   approvalHistory?: ApprovalLog[];
   attachments?: string[];
@@ -144,7 +145,7 @@ export const updateBAPB = async (id: string, data: Partial<BAPB>) => {
   }
 };
 
-export const approveBAPB = async (id: string, actor: { uid: string, name: string, role: string }, notes?: string) => {
+export const approveBAPB = async (id: string, actor: { uid: string, name: string, role: string, signatureUrl?: string }, notes?: string) => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
     const docSnap = await getDoc(docRef);
@@ -170,13 +171,41 @@ export const approveBAPB = async (id: string, actor: { uid: string, name: string
     let newStatus = data.status;
     let authorizedAction = false;
 
-    if (currentStage === 'waiting_pic' && role === 'pic_gudang') {
+    // Admin can approve at any stage
+    if (role === 'admin') {
+      if (currentStage === 'waiting_pic') {
+        nextStage = 'waiting_direksi';
+        history.push({
+          stage: 'pic_review',
+          status: 'approved',
+          actorId: actor.uid,
+          actorName: actor.name,
+          signatureUrl: actor.signatureUrl,
+          timestamp: new Date().toISOString(),
+          notes
+        });
+      } else if (currentStage === 'waiting_direksi') {
+        nextStage = 'approved';
+        newStatus = 'approved';
+        history.push({
+          stage: 'direksi_review',
+          status: 'approved',
+          actorId: actor.uid,
+          actorName: actor.name,
+          signatureUrl: actor.signatureUrl,
+          timestamp: new Date().toISOString(),
+          notes
+        });
+      }
+      authorizedAction = true;
+    } else if (currentStage === 'waiting_pic' && role === 'pic_gudang') {
       nextStage = 'waiting_direksi';
       history.push({
         stage: 'pic_review',
         status: 'approved',
         actorId: actor.uid,
         actorName: actor.name,
+        signatureUrl: actor.signatureUrl,
         timestamp: new Date().toISOString(),
         notes
       });
@@ -189,6 +218,7 @@ export const approveBAPB = async (id: string, actor: { uid: string, name: string
         status: 'approved',
         actorId: actor.uid,
         actorName: actor.name,
+        signatureUrl: actor.signatureUrl,
         timestamp: new Date().toISOString(),
         notes
       });

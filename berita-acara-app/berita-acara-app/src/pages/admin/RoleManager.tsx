@@ -22,7 +22,6 @@ import {
     Chip,
     IconButton,
     Stack,
-    InputAdornment,
 } from '@mui/material';
 import {
     Security as SecurityIcon,
@@ -35,6 +34,7 @@ import { getAllRoles, updateRole, createRole, deleteRole, RoleData } from '../..
 import { getAllUsers } from '../../services/userService';
 import { UserProfile } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import PageHeader from '../../components/PageHeader';
 
 const PERMISSION_GROUPS = [
     {
@@ -76,6 +76,7 @@ const RoleManager: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<RoleData | null>(null);
     const [newRoleName, setNewRoleName] = useState('');
     const [newRoleDescription, setNewRoleDescription] = useState('');
+    const [editDescription, setEditDescription] = useState('');
 
     const fetchData = async () => {
         setLoading(true);
@@ -161,6 +162,20 @@ const RoleManager: React.FC = () => {
         }
     };
 
+    const handleUpdateDescription = async (roleId: string) => {
+        const result = await updateRole(roleId, { description: editDescription });
+        if (result.success) {
+            showToast('Deskripsi berhasil diperbarui', 'success');
+            fetchData();
+            // Update selectedRole dengan deskripsi baru
+            if (selectedRole) {
+                setSelectedRole({ ...selectedRole, description: editDescription });
+            }
+        } else {
+            showToast('Gagal memperbarui deskripsi', 'error');
+        }
+    };
+
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -174,42 +189,32 @@ const RoleManager: React.FC = () => {
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            {/* Header */}
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <SecurityIcon color="primary" sx={{ fontSize: 32 }} />
-                    <Box>
-                        <Typography variant="h4" fontWeight={700}>
-                            Role & Access
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {roles.length} Roles Configured
-                        </Typography>
-                    </Box>
-                </Box>
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsAddModalOpen(true)}>
-                    Add Role
-                </Button>
-            </Box>
+            <PageHeader
+                title="Role & Access"
+                description={`${roles.length} Roles Configured`}
+                breadcrumbs={[
+                    { label: 'Admin', to: '/admin/roles' },
+                    { label: 'Roles' }
+                ]}
+            />
 
-            {/* Search */}
-            <Box sx={{ mb: 3 }}>
+            {/* Action Bar with Search */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
                 <TextField
-                    fullWidth
-                    placeholder="Search Role..."
+                    size="small"
+                    placeholder="Cari nama role atau deskripsi..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    sx={{ flexGrow: 1, maxWidth: 400 }}
                     slotProps={{
                         input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon />
-                                </InputAdornment>
-                            ),
+                            startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
                         },
                     }}
-                    sx={{ maxWidth: 400 }}
                 />
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsAddModalOpen(true)}>
+                    Tambah Role
+                </Button>
             </Box>
 
             {/* Table */}
@@ -247,7 +252,13 @@ const RoleManager: React.FC = () => {
                                         <Chip label="Active" size="small" color="success" />
                                     </TableCell>
                                     <TableCell align="right">
-                                        <Button size="small" onClick={() => setSelectedRole(role)}>
+                                        <Button
+                                            size="small"
+                                            onClick={() => {
+                                                setSelectedRole(role);
+                                                setEditDescription(role.description || '');
+                                            }}
+                                        >
                                             See Details
                                         </Button>
                                     </TableCell>
@@ -308,13 +319,27 @@ const RoleManager: React.FC = () => {
                     <>
                         <DialogTitle>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <Box>
-                                    <Typography variant="h6" fontWeight={700}>
-                                        {selectedRole.name}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {selectedRole.description || 'No description'}
-                                    </Typography>
+                                <Box sx={{ flex: 1, mr: 2 }}>
+                                    <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 0.5 }}>
+                                        <Typography variant="h6" fontWeight={700}>
+                                            {selectedRole.name}
+                                        </Typography>
+                                        <Chip
+                                            label={`${selectedRole.permissions.length} permissions`}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                        />
+                                    </Stack>
+                                    {selectedRole.description ? (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                                            "{selectedRole.description}"
+                                        </Typography>
+                                    ) : (
+                                        <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                                            Belum ada deskripsi
+                                        </Typography>
+                                    )}
                                 </Box>
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                     <IconButton
@@ -331,6 +356,32 @@ const RoleManager: React.FC = () => {
                             </Box>
                         </DialogTitle>
                         <DialogContent>
+                            {/* Editable Description */}
+                            <Box sx={{ mt: 2, mb: 3 }}>
+                                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                                    Deskripsi Role
+                                </Typography>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={3}
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    placeholder="Tambahkan deskripsi role..."
+                                    variant="outlined"
+                                />
+                                <Box sx={{ mt: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button
+                                        size="small"
+                                        variant="contained"
+                                        onClick={() => selectedRole?.id && handleUpdateDescription(selectedRole.id)}
+                                        disabled={editDescription === selectedRole?.description}
+                                    >
+                                        Simpan Deskripsi
+                                    </Button>
+                                </Box>
+                            </Box>
+
                             <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                                 Permissions
                             </Typography>

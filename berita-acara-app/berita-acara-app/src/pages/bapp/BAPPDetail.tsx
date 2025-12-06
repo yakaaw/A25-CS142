@@ -28,6 +28,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getBAPPById, approveBAPP, rejectBAPP, BAPP } from '../../services/bappService';
 import { useAuth } from '../../context/AuthContext';
 import ApprovalTimeline from '../../components/ApprovalTimeline';
+import ApprovalDialog from '../../components/ApprovalDialog';
 import { generateBAPPPDF } from '../../utils/pdfGenerator';
 
 const BAPPDetail: React.FC = () => {
@@ -35,6 +36,10 @@ const BAPPDetail: React.FC = () => {
   const [data, setData] = useState<BAPP | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approvalDialog, setApprovalDialog] = useState<{
+    open: boolean;
+    type: 'approve' | 'reject';
+  }>({ open: false, type: 'approve' });
   const { userProfile, permissions } = useAuth();
 
   const fetchData = useCallback(async () => {
@@ -49,9 +54,8 @@ const BAPPDetail: React.FC = () => {
     fetchData();
   }, [id, fetchData]);
 
-  const handleApprove = async () => {
+  const handleApprove = async (notes: string) => {
     if (!id || !userProfile?.uid) return;
-    const notes = prompt('Catatan approval (opsional):');
 
     const result = await approveBAPP(
       id,
@@ -59,6 +63,7 @@ const BAPPDetail: React.FC = () => {
         uid: userProfile.uid,
         name: userProfile.name || userProfile.email || 'Unknown',
         role: userProfile.role || 'unknown',
+        signatureUrl: userProfile.signatureUrl,
       },
       notes || undefined
     );
@@ -67,13 +72,12 @@ const BAPPDetail: React.FC = () => {
       fetchData();
     } else {
       alert('Error: ' + result.error);
+      throw new Error(result.error); // Keep dialog open on error
     }
   };
 
-  const handleReject = async () => {
+  const handleReject = async (reason: string) => {
     if (!id || !userProfile?.uid) return;
-    const reason = prompt('Alasan penolakan:');
-    if (!reason) return;
 
     await rejectBAPP(id, {
       uid: userProfile.uid,
@@ -85,8 +89,14 @@ const BAPPDetail: React.FC = () => {
   };
 
   const canApprove = () => {
-    if (!data || (!permissions.includes('bapp.verify') && !permissions.includes('bapp.approve'))) return false;
-    if (data.status === 'rejected') return false;
+    if (!data || data.status === 'rejected') return false;
+
+    // Admin can always approve if not rejected
+    if (userProfile?.role === 'admin') {
+      return data.currentStage === 'waiting_pic' || data.currentStage === 'waiting_direksi';
+    }
+
+    if (!permissions.includes('bapp.verify') && !permissions.includes('bapp.approve')) return false;
     if (permissions.includes('bapp.verify') && data.currentStage === 'waiting_pic') return true;
     if (permissions.includes('bapp.approve') && data.currentStage === 'waiting_direksi') return true;
     return false;
@@ -279,7 +289,7 @@ const BAPPDetail: React.FC = () => {
                   color="success"
                   fullWidth
                   startIcon={<CheckCircleIcon />}
-                  onClick={handleApprove}
+                  onClick={() => setApprovalDialog({ open: true, type: 'approve' })}
                 >
                   {getApproveButtonText()}
                 </Button>
@@ -288,7 +298,7 @@ const BAPPDetail: React.FC = () => {
                   color="error"
                   fullWidth
                   startIcon={<CancelIcon />}
-                  onClick={handleReject}
+                  onClick={() => setApprovalDialog({ open: true, type: 'reject' })}
                 >
                   Tolak Dokumen
                 </Button>
@@ -297,6 +307,16 @@ const BAPPDetail: React.FC = () => {
           )}
         </Stack>
       </Box>
+
+      {/* Approval Dialog */}
+      <ApprovalDialog
+        open={approvalDialog.open}
+        onClose={() => setApprovalDialog({ ...approvalDialog, open: false })}
+        onConfirm={approvalDialog.type === 'approve' ? handleApprove : handleReject}
+        type={approvalDialog.type}
+        documentType="BAPP"
+        documentNumber={data?.nomorBAPP}
+      />
     </Container>
   );
 };

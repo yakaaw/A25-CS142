@@ -25,6 +25,7 @@ export interface ApprovalLog {
   status: 'pending' | 'approved' | 'rejected';
   actorId: string;
   actorName: string;
+  signatureUrl?: string;
   timestamp: string;
   notes?: string;
 }
@@ -32,6 +33,27 @@ export interface ApprovalLog {
 export interface BAPP {
   id?: string;
   vendorId?: string;
+
+  // Project & Contract Info
+  contractNumber?: string; // Nomor Kontrak/PO
+  projectName?: string; // Nama Pekerjaan
+  startDate?: string; // Tanggal Mulai Proyek
+  endDate?: string; // Tanggal Selesai Proyek
+
+  // Parties Info (Snapshot at creation time)
+  party1?: { // Pelaksana (Vendor)
+    name: string;
+    position: string;
+    companyName: string;
+    address: string;
+  };
+  party2?: { // Pemberi Kerja (Klien)
+    name: string;
+    position: string;
+    companyName: string;
+    address: string;
+  };
+
   workDetails?: BAPPWorkDetail[];
   status?: 'pending' | 'approved' | 'rejected';
   currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
@@ -84,7 +106,7 @@ export const updateBAPP = async (id: string, data: Partial<BAPP>) => {
   }
 };
 
-export const approveBAPP = async (id: string, actor: { uid: string, name: string, role: string }, notes?: string) => {
+export const approveBAPP = async (id: string, actor: { uid: string, name: string, role: string, signatureUrl?: string }, notes?: string) => {
   try {
     const docRef = doc(db, COLLECTION_NAME, id);
     const docSnap = await getDoc(docRef);
@@ -98,17 +120,47 @@ export const approveBAPP = async (id: string, actor: { uid: string, name: string
 
     let nextStage: string | undefined;
     let newStatus = data.status;
+    let authorizedAction = false;
 
-    if (currentStage === 'waiting_pic' && role === 'pic_pemesan') {
+    // Admin can approve at any stage
+    if (role === 'admin') {
+      if (currentStage === 'waiting_pic') {
+        nextStage = 'waiting_direksi';
+        history.push({
+          stage: 'pic_review',
+          status: 'approved',
+          actorId: actor.uid,
+          actorName: actor.name,
+          signatureUrl: actor.signatureUrl,
+          timestamp: new Date().toISOString(),
+          notes
+        });
+      } else if (currentStage === 'waiting_direksi') {
+        nextStage = 'approved';
+        newStatus = 'approved';
+        history.push({
+          stage: 'direksi_review',
+          status: 'approved',
+          actorId: actor.uid,
+          actorName: actor.name,
+          signatureUrl: actor.signatureUrl,
+          timestamp: new Date().toISOString(),
+          notes
+        });
+      }
+      authorizedAction = true;
+    } else if (currentStage === 'waiting_pic' && role === 'pic_pemesan') {
       nextStage = 'waiting_direksi';
       history.push({
         stage: 'pic_review',
         status: 'approved',
         actorId: actor.uid,
         actorName: actor.name,
+        signatureUrl: actor.signatureUrl,
         timestamp: new Date().toISOString(),
         notes
       });
+      authorizedAction = true;
     } else if (currentStage === 'waiting_direksi' && role === 'direksi') {
       nextStage = 'approved';
       newStatus = 'approved';
@@ -117,10 +169,14 @@ export const approveBAPP = async (id: string, actor: { uid: string, name: string
         status: 'approved',
         actorId: actor.uid,
         actorName: actor.name,
+        signatureUrl: actor.signatureUrl,
         timestamp: new Date().toISOString(),
         notes
       });
-    } else {
+      authorizedAction = true;
+    }
+
+    if (!authorizedAction) {
       return { success: false, error: 'Unauthorized approval action' };
     }
 

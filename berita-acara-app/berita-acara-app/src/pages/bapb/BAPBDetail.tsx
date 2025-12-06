@@ -28,6 +28,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getBAPBById, approveBAPB, rejectBAPB, BAPB } from '../../services/bapbService';
 import { useAuth } from '../../context/AuthContext';
 import ApprovalTimeline from '../../components/ApprovalTimeline';
+import ApprovalDialog from '../../components/ApprovalDialog';
 import { generateBAPBPDF } from '../../utils/pdfGenerator';
 
 const BAPBDetail: React.FC = () => {
@@ -35,6 +36,10 @@ const BAPBDetail: React.FC = () => {
   const [data, setData] = useState<BAPB | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approvalDialog, setApprovalDialog] = useState<{
+    open: boolean;
+    type: 'approve' | 'reject';
+  }>({ open: false, type: 'approve' });
   const { userProfile, permissions } = useAuth();
 
   const fetchData = useCallback(async () => {
@@ -49,9 +54,8 @@ const BAPBDetail: React.FC = () => {
     fetchData();
   }, [id, fetchData]);
 
-  const handleApprove = async () => {
+  const handleApprove = async (notes: string) => {
     if (!id || !userProfile?.uid) return;
-    const notes = prompt('Catatan approval (opsional):');
 
     const result = await approveBAPB(
       id,
@@ -59,6 +63,7 @@ const BAPBDetail: React.FC = () => {
         uid: userProfile.uid,
         name: userProfile.name || userProfile.email || 'Unknown',
         role: userProfile.role || 'unknown',
+        signatureUrl: userProfile.signatureUrl,
       },
       notes || undefined
     );
@@ -67,13 +72,12 @@ const BAPBDetail: React.FC = () => {
       fetchData();
     } else {
       alert('Error: ' + result.error);
+      throw new Error(result.error); // Keep dialog open on error
     }
   };
 
-  const handleReject = async () => {
+  const handleReject = async (reason: string) => {
     if (!id || !userProfile?.uid) return;
-    const reason = prompt('Alasan penolakan:');
-    if (!reason) return;
 
     await rejectBAPB(id, {
       uid: userProfile.uid,
@@ -85,8 +89,14 @@ const BAPBDetail: React.FC = () => {
   };
 
   const canApprove = () => {
-    if (!data || (!permissions.includes('bapb.verify') && !permissions.includes('bapb.approve'))) return false;
-    if (data.status === 'rejected') return false;
+    if (!data || data.status === 'rejected') return false;
+
+    // Admin can always approve if not rejected
+    if (userProfile?.role === 'admin') {
+      return data.currentStage === 'waiting_pic' || data.currentStage === 'waiting_direksi';
+    }
+
+    if (!permissions.includes('bapb.verify') && !permissions.includes('bapb.approve')) return false;
     if (permissions.includes('bapb.verify') && data.currentStage === 'waiting_pic') return true;
     if (permissions.includes('bapb.approve') && data.currentStage === 'waiting_direksi') return true;
     return false;
@@ -283,7 +293,7 @@ const BAPBDetail: React.FC = () => {
                   color="success"
                   fullWidth
                   startIcon={<CheckCircleIcon />}
-                  onClick={handleApprove}
+                  onClick={() => setApprovalDialog({ open: true, type: 'approve' })}
                 >
                   {getApproveButtonText()}
                 </Button>
@@ -292,7 +302,7 @@ const BAPBDetail: React.FC = () => {
                   color="error"
                   fullWidth
                   startIcon={<CancelIcon />}
-                  onClick={handleReject}
+                  onClick={() => setApprovalDialog({ open: true, type: 'reject' })}
                 >
                   Tolak Dokumen
                 </Button>
@@ -301,6 +311,16 @@ const BAPBDetail: React.FC = () => {
           )}
         </Stack>
       </Box>
+
+      {/* Approval Dialog */}
+      <ApprovalDialog
+        open={approvalDialog.open}
+        onClose={() => setApprovalDialog({ ...approvalDialog, open: false })}
+        onConfirm={approvalDialog.type === 'approve' ? handleApprove : handleReject}
+        type={approvalDialog.type}
+        documentType="BAPB"
+        documentNumber={data?.nomorBAPB}
+      />
     </Container>
   );
 };

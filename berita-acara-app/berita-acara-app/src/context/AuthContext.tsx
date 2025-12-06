@@ -15,6 +15,10 @@ export interface UserProfile {
   email: string;
   name?: string;
   role?: string;
+  phone?: string;
+  address?: string;
+  photoURL?: string;
+  signatureUrl?: string;
   createdAt?: string;
   uid?: string;
 }

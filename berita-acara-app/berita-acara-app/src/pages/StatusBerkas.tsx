@@ -7,9 +7,12 @@ import {
     CardContent,
     CircularProgress,
     Stack,
-    Breadcrumbs,
-    Link as MuiLink,
     Avatar,
+    Chip,
+    List,
+    ListItem,
+    ListItemText,
+    Divider,
 } from '@mui/material';
 import {
     Description as DescriptionIcon,
@@ -21,6 +24,7 @@ import {
 import { Link } from 'react-router-dom';
 import { getAllBAPB } from '../services/bapbService';
 import { getAllBAPP } from '../services/bappService';
+import PageHeader from '../components/PageHeader';
 
 const StatusBerkas: React.FC = () => {
     const [stats, setStats] = useState({
@@ -29,7 +33,20 @@ const StatusBerkas: React.FC = () => {
         pendingApproval: 0,
         completed: 0,
     });
+    const [recentActivities, setRecentActivities] = useState<{
+        id: string;
+        type: 'BAPB' | 'BAPP';
+        date: string;
+        status: string;
+    }[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Helper function to get status color
+    const getStatusColor = (status: string): 'success' | 'error' | 'warning' => {
+        if (status === 'approved') return 'success';
+        if (status === 'rejected') return 'error';
+        return 'warning';
+    };
 
     useEffect(() => {
         const loadStats = async () => {
@@ -53,6 +70,36 @@ const StatusBerkas: React.FC = () => {
                     pendingApproval,
                     completed,
                 });
+
+                // Get recent activities (last 10)
+                const activities: {
+                    id: string;
+                    type: 'BAPB' | 'BAPP';
+                    date: string;
+                    status: string;
+                }[] = [];
+
+                bapbData.forEach((doc) => {
+                    activities.push({
+                        id: doc.id || '',
+                        type: 'BAPB',
+                        date: doc.createdAt || '',
+                        status: doc.status || 'pending',
+                    });
+                });
+
+                bappData.forEach((doc) => {
+                    activities.push({
+                        id: doc.id || '',
+                        type: 'BAPP',
+                        date: doc.createdAt || '',
+                        status: doc.status || 'pending',
+                    });
+                });
+
+                // Sort by date (newest first) and take first 10
+                activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                setRecentActivities(activities.slice(0, 10));
             } catch (error) {
                 console.error('Error loading stats:', error);
             } finally {
@@ -104,21 +151,13 @@ const StatusBerkas: React.FC = () => {
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            {/* Header */}
-            <Box sx={{ mb: 3 }}>
-                <Breadcrumbs sx={{ mb: 1 }}>
-                    <MuiLink component={Link} to="/dashboard" underline="hover">
-                        Dashboard
-                    </MuiLink>
-                    <Typography color="text.primary">Status Berkas</Typography>
-                </Breadcrumbs>
-                <Typography variant="h4" fontWeight={700} gutterBottom>
-                    Status Berkas
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Monitoring status semua Berita Acara
-                </Typography>
-            </Box>
+            <PageHeader
+                title="Status Berkas"
+                description="Monitoring status semua Berita Acara"
+                breadcrumbs={[
+                    { label: 'Status Berkas' }
+                ]}
+            />
 
             {/* Stats Cards */}
             <Box
@@ -153,18 +192,66 @@ const StatusBerkas: React.FC = () => {
             {/* Recent Activity */}
             <Card>
                 <CardContent>
-                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                    <Typography variant="h6" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TimelineIcon />
                         Aktivitas Terbaru
                     </Typography>
-                    <Box sx={{ textAlign: 'center', py: 8 }}>
-                        <TimelineIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                        <Typography variant="body1" color="text.secondary" gutterBottom>
-                            Belum ada aktivitas Berita Acara
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Aktivitas akan muncul di sini setelah ada BA yang dibuat
-                        </Typography>
-                    </Box>
+                    {recentActivities.length === 0 ? (
+                        <Box sx={{ textAlign: 'center', py: 8 }}>
+                            <TimelineIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                            <Typography variant="body1" color="text.secondary" gutterBottom>
+                                Belum ada aktivitas Berita Acara
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Aktivitas akan muncul di sini setelah ada BA yang dibuat
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <List>
+                            {recentActivities.map((activity, index) => (
+                                <React.Fragment key={`${activity.type}-${activity.id}`}>
+                                    {index > 0 && <Divider />}
+                                    <ListItem
+                                        component={Link}
+                                        to={`/${activity.type.toLowerCase()}/${activity.id}`}
+                                        sx={{
+                                            textDecoration: 'none',
+                                            '&:hover': { bgcolor: 'action.hover' },
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <Avatar
+                                            sx={{
+                                                mr: 2,
+                                                bgcolor: activity.type === 'BAPB' ? 'primary.light' : 'success.light',
+                                                color: activity.type === 'BAPB' ? 'primary.main' : 'success.main',
+                                            }}
+                                        >
+                                            {activity.type === 'BAPB' ? <DescriptionIcon /> : <AssignmentIcon />}
+                                        </Avatar>
+                                        <ListItemText
+                                            primary={
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography variant="subtitle1" fontWeight={600}>
+                                                        {activity.type} #{activity.id}
+                                                    </Typography>
+                                                    <Chip
+                                                        label={activity.status}
+                                                        size="small"
+                                                        color={getStatusColor(activity.status)}
+                                                    />
+                                                </Box>
+                                            }
+                                            secondary={new Date(activity.date).toLocaleString('id-ID', {
+                                                dateStyle: 'medium',
+                                                timeStyle: 'short',
+                                            })}
+                                        />
+                                    </ListItem>
+                                </React.Fragment>
+                            ))}
+                        </List>
+                    )}
                 </CardContent>
             </Card>
         </Container>

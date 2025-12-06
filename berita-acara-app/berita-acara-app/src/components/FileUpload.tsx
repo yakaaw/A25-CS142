@@ -6,12 +6,14 @@ import {
     LinearProgress,
     Paper,
     IconButton,
+    Stack,
 } from '@mui/material';
 import {
     CloudUpload as UploadIcon,
     Close as CloseIcon,
     Description as FileIcon,
     Image as ImageIcon,
+    CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import { uploadFile } from '../services/storageService';
 
@@ -19,9 +21,17 @@ interface FileUploadProps {
     onUploadComplete: (url: string) => void;
     path: string;
     label?: string;
+    acceptedFormats?: string;
+    maxSize?: number;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label = 'Upload File' }) => {
+const FileUpload: React.FC<FileUploadProps> = ({
+    onUploadComplete,
+    path,
+    label = 'Upload File',
+    acceptedFormats = 'image/*,application/pdf',
+    maxSize = 10
+}) => {
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [preview, setPreview] = useState<string | null>(null);
@@ -36,6 +46,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
     };
 
     const processFile = async (file: File) => {
+        // Validate file size
+        const maxBytes = maxSize * 1024 * 1024;
+        if (file.size > maxBytes) {
+            alert(`File size must be less than ${maxSize}MB`);
+            return;
+        }
+
         setUploading(true);
         setProgress(0);
         setFileName(file.name);
@@ -79,25 +96,38 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
         }
     };
 
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    };
+
     return (
         <Box sx={{ width: '100%' }}>
-            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
-                {label}
-            </Typography>
+            {label && (
+                <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5, color: 'text.primary' }}>
+                    {label}
+                </Typography>
+            )}
 
             {preview === null ? (
                 <Paper
-                    variant="outlined"
+                    elevation={0}
                     sx={{
-                        p: 3,
+                        p: 4,
                         textAlign: 'center',
-                        borderStyle: 'dashed',
                         borderWidth: 2,
-                        borderColor: dragOver ? 'primary.main' : 'grey.300',
-                        bgcolor: dragOver ? 'action.hover' : 'background.paper',
-                        transition: 'all 0.2s',
+                        borderStyle: 'dashed',
+                        borderColor: dragOver ? 'primary.main' : 'divider',
+                        bgcolor: dragOver ? 'action.hover' : 'background.default',
+                        borderRadius: 2,
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer',
                         '&:hover': {
                             borderColor: 'primary.main',
+                            bgcolor: 'action.hover',
                         },
                     }}
                     onDragOver={handleDragOver}
@@ -105,68 +135,168 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, path, label =
                     onDrop={handleDrop}
                 >
                     {uploading ? (
-                        <Box sx={{ width: '100%' }}>
-                            <LinearProgress variant="determinate" value={progress} sx={{ mb: 1 }} />
-                            <Typography variant="body2" color="text.secondary">
-                                Uploading... {Math.round(progress)}%
-                            </Typography>
+                        <Box sx={{ width: '100%', maxWidth: 400, mx: 'auto' }}>
+                            <Stack spacing={2} alignItems="center">
+                                <Box
+                                    sx={{
+                                        width: 56,
+                                        height: 56,
+                                        borderRadius: '50%',
+                                        bgcolor: 'primary.light',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        mb: 1,
+                                    }}
+                                >
+                                    <UploadIcon sx={{ fontSize: 28, color: 'primary.main' }} />
+                                </Box>
+                                <Box sx={{ width: '100%' }}>
+                                    <LinearProgress
+                                        variant="determinate"
+                                        value={progress}
+                                        sx={{
+                                            height: 8,
+                                            borderRadius: 4,
+                                            mb: 1,
+                                            bgcolor: 'action.hover',
+                                            '& .MuiLinearProgress-bar': {
+                                                borderRadius: 4,
+                                            }
+                                        }}
+                                    />
+                                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                                        Uploading... {Math.round(progress)}%
+                                    </Typography>
+                                </Box>
+                            </Stack>
                         </Box>
                     ) : (
-                        <>
-                            <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                            <Button variant="contained" component="label">
-                                Upload a file{' '}
-                                <input
-                                    type="file"
-                                    hidden
-                                    onChange={handleFileChange}
-                                    accept="image/*,application/pdf"
-                                />
-                            </Button>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                                or drag and drop
+                        <Stack spacing={2} alignItems="center">
+                            <Box
+                                sx={{
+                                    width: 64,
+                                    height: 64,
+                                    borderRadius: '50%',
+                                    bgcolor: 'primary.light',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <UploadIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+                            </Box>
+
+                            <Box>
+                                <Button
+                                    variant="contained"
+                                    component="label"
+                                    size="large"
+                                    sx={{
+                                        px: 4,
+                                        py: 1.5,
+                                        borderRadius: 2,
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    Pilih File
+                                    <input
+                                        type="file"
+                                        hidden
+                                        onChange={handleFileChange}
+                                        accept={acceptedFormats}
+                                    />
+                                </Button>
+                            </Box>
+
+                            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                                atau drag & drop file di sini
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                                PNG, JPG, PDF up to 10MB
-                            </Typography>
-                        </>
+
+                            <Box
+                                sx={{
+                                    px: 3,
+                                    py: 1,
+                                    bgcolor: 'action.hover',
+                                    borderRadius: 1,
+                                }}
+                            >
+                                <Typography variant="caption" color="text.secondary">
+                                    Format: PNG, JPG, PDF • Max {maxSize}MB
+                                </Typography>
+                            </Box>
+                        </Stack>
                     )}
                 </Paper>
             ) : (
                 <Paper
-                    variant="outlined"
+                    elevation={1}
                     sx={{
-                        p: 2,
+                        p: 2.5,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'success.light',
+                        bgcolor: 'success.lighter',
                     }}
                 >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
                         <Box
                             sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 1,
-                                bgcolor: 'primary.light',
+                                width: 48,
+                                height: 48,
+                                borderRadius: 1.5,
+                                bgcolor: 'success.main',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: 'primary.main',
+                                color: 'white',
+                                flexShrink: 0,
                             }}
                         >
-                            {fileName?.toLowerCase().endsWith('.pdf') ? <FileIcon /> : <ImageIcon />}
+                            {fileName?.toLowerCase().endsWith('.pdf') ? (
+                                <FileIcon sx={{ fontSize: 24 }} />
+                            ) : (
+                                <ImageIcon sx={{ fontSize: 24 }} />
+                            )}
                         </Box>
-                        <Box>
-                            <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: 300 }}>
+
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                                variant="body2"
+                                fontWeight={600}
+                                noWrap
+                                sx={{
+                                    maxWidth: '100%',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                }}
+                            >
                                 {fileName}
                             </Typography>
-                            <Typography variant="caption" color="success.main">
-                                Upload complete
-                            </Typography>
+                            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
+                                <CheckIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                                <Typography variant="caption" color="success.main" fontWeight={600}>
+                                    Upload Berhasil
+                                </Typography>
+                            </Stack>
                         </Box>
-                    </Box>
-                    <IconButton onClick={handleRemove} size="small" color="error">
+                    </Stack>
+
+                    <IconButton
+                        onClick={handleRemove}
+                        size="small"
+                        sx={{
+                            ml: 2,
+                            color: 'error.main',
+                            '&:hover': {
+                                bgcolor: 'error.lighter',
+                            }
+                        }}
+                    >
                         <CloseIcon />
                     </IconButton>
                 </Paper>

@@ -50,11 +50,7 @@ const Navbar: React.FC = () => {
 
   return (
     <AppBar position="sticky" color="primary" elevation={1}>
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Berita Acara System
-        </Typography>
-
+      <Toolbar sx={{ justifyContent: 'flex-end' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <IconButton color="inherit" size="large">
             <NotificationsIcon />

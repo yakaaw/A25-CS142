@@ -5,18 +5,21 @@ import {
     Paper,
     Stack,
     Avatar,
+    Divider,
 } from '@mui/material';
 import {
     CheckCircle as CheckCircleIcon,
     Schedule as ScheduleIcon,
     Cancel as CancelIcon,
     RadioButtonUnchecked as RadioButtonUncheckedIcon,
+    VerifiedUser as VerifiedUserIcon,
 } from '@mui/icons-material';
 
 interface ApprovalLog {
     stage: string;
     status: 'pending' | 'approved' | 'rejected';
     actorName: string;
+    signatureUrl?: string;
     timestamp: string;
     notes?: string;
 }
@@ -103,19 +106,27 @@ const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({ currentStage, appro
                                     bgcolor: status === 'current' ? getStatusColor(status) : 'background.paper',
                                     position: 'relative',
                                     zIndex: 1,
+                                    border: log?.signatureUrl ? '2px solid' : 'none',
+                                    borderColor: log?.signatureUrl ? 'success.main' : 'transparent',
                                 }}
                             >
                                 <Avatar sx={{ bgcolor: 'background.paper', width: 32, height: 32 }}>
                                     {getStatusIcon(status)}
                                 </Avatar>
                                 <Box sx={{ flex: 1 }}>
-                                    <Typography
-                                        variant="subtitle1"
-                                        fontWeight={600}
-                                        color={status === 'current' ? 'primary.main' : 'text.primary'}
-                                    >
-                                        {stage.label}
-                                    </Typography>
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                        <Typography
+                                            variant="subtitle1"
+                                            fontWeight={600}
+                                            color={status === 'current' ? 'primary.main' : 'text.primary'}
+                                        >
+                                            {stage.label}
+                                        </Typography>
+                                        {log?.signatureUrl && (
+                                            <VerifiedUserIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                                        )}
+                                    </Stack>
+
                                     {log && (
                                         <Box sx={{ mt: 1 }}>
                                             <Typography variant="body2" color="text.secondary">
@@ -124,10 +135,48 @@ const ApprovalTimeline: React.FC<ApprovalTimelineProps> = ({ currentStage, appro
                                             <Typography variant="caption" color="text.secondary">
                                                 {new Date(log.timestamp).toLocaleString('id-ID')}
                                             </Typography>
+
                                             {log.notes && (
                                                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontStyle: 'italic' }}>
                                                     "{log.notes}"
                                                 </Typography>
+                                            )}
+
+                                            {/* Digital Signature Display */}
+                                            {log.signatureUrl && (
+                                                <Box sx={{ mt: 2 }}>
+                                                    <Divider sx={{ mb: 1 }} />
+                                                    <Stack direction="row" spacing={2} alignItems="center">
+                                                        <Box>
+                                                            <Typography variant="caption" color="success.main" fontWeight={600} display="block" gutterBottom>
+                                                                ✓ Ditandatangani Secara Digital
+                                                            </Typography>
+                                                            <Box
+                                                                sx={{
+                                                                    p: 1,
+                                                                    border: '1px solid',
+                                                                    borderColor: 'success.main',
+                                                                    borderRadius: 1,
+                                                                    bgcolor: 'background.paper',
+                                                                    display: 'inline-block',
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={log.signatureUrl}
+                                                                    alt={`Tanda Tangan ${log.actorName}`}
+                                                                    style={{
+                                                                        maxWidth: '200px',
+                                                                        maxHeight: '60px',
+                                                                        display: 'block',
+                                                                    }}
+                                                                />
+                                                            </Box>
+                                                            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                                                {log.actorName}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Stack>
+                                                </Box>
                                             )}
                                         </Box>
                                     )}

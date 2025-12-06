@@ -17,14 +17,16 @@ import {
   MenuItem,
   Stack,
 } from '@mui/material';
-import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon } from '@mui/icons-material';
+import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon, Search as SearchIcon } from '@mui/icons-material';
 import { getAllBAPB, BAPB } from '../../services/bapbService';
 import { Link } from 'react-router-dom';
+import PageHeader from '../../components/PageHeader';
 
 const BAPBList: React.FC = () => {
   const [list, setList] = useState<BAPB[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -58,6 +60,18 @@ const BAPBList: React.FC = () => {
     load();
   }, [filterStatus]);
 
+  // Filter list based on search query
+  const filteredList = list.filter((item) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      item.id?.toLowerCase().includes(query) ||
+      item.vendorId?.toLowerCase().includes(query) ||
+      item.status?.toLowerCase().includes(query) ||
+      item.currentStage?.toLowerCase().includes(query)
+    );
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
@@ -81,10 +95,27 @@ const BAPBList: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" fontWeight={700}>
-          📄 Daftar BAPB
-        </Typography>
+      <PageHeader
+        title="Daftar BAPB"
+        description="Berita Acara Penerimaan Barang"
+        breadcrumbs={[
+          { label: 'BAPB' }
+        ]}
+      />
+
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+        <TextField
+          size="small"
+          placeholder="Cari ID, vendor, atau status..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ flexGrow: 1, maxWidth: 400 }}
+          slotProps={{
+            input: {
+              startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
+            },
+          }}
+        />
         <Stack direction="row" spacing={2}>
           <TextField
             select
@@ -121,7 +152,7 @@ const BAPBList: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {list.map((b) => (
+            {filteredList.map((b) => (
               <TableRow key={b.id} hover>
                 <TableCell>{b.id}</TableCell>
                 <TableCell>{b.vendorId}</TableCell>
