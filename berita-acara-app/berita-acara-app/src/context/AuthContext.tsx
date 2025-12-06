@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from 'react';
 import {
   User,
   signInWithEmailAndPassword,
@@ -103,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const updateUserProfile = async (data: Partial<UserProfile>) => {
+  const updateUserProfile = useCallback(async (data: Partial<UserProfile>) => {
     if (!currentUser) throw new Error('No user logged in');
 
     // Update Firestore
@@ -115,12 +115,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Update local state
     setUserProfile((prev) => prev ? { ...prev, ...data } : null);
-  };
+  }, [currentUser]);
 
-  const changePassword = async (newPassword: string) => {
+  const changePassword = useCallback(async (newPassword: string) => {
     if (!currentUser) throw new Error('No user logged in');
     await updatePassword(currentUser, newPassword);
-  };
+  }, [currentUser]);
 
   const value: AuthContextValue = useMemo(() => ({
     currentUser,
@@ -132,7 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     updateUserProfile,
     changePassword
-  }), [currentUser, userProfile, permissions, loading]);
+  }), [currentUser, userProfile, permissions, loading, updateUserProfile, changePassword]);
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };

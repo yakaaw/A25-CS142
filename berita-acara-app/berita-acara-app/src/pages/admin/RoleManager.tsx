@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     Container,
     Paper,
@@ -78,7 +78,7 @@ const RoleManager: React.FC = () => {
     const [newRoleDescription, setNewRoleDescription] = useState('');
     const [editDescription, setEditDescription] = useState('');
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         const [rolesResult, usersResult] = await Promise.all([getAllRoles(), getAllUsers()]);
 
@@ -93,11 +93,11 @@ const RoleManager: React.FC = () => {
         }
 
         setLoading(false);
-    };
+    }, [showToast]);
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [fetchData]);
 
     const getActiveUserCount = (roleName: string) => {
         return users.filter((u) => u.role === roleName).length;

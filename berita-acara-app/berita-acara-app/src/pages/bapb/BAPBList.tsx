@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Container,
   Paper,
@@ -31,7 +31,7 @@ const BAPBList: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = async (isLoadMore = false) => {
+  const load = useCallback(async (isLoadMore = false) => {
     if (isLoadMore) setLoadingMore(true);
     else setLoading(true);
 
@@ -54,11 +54,11 @@ const BAPBList: React.FC = () => {
 
     setLoading(false);
     setLoadingMore(false);
-  };
+  }, [filterStatus]);
 
   useEffect(() => {
     load();
-  }, [filterStatus]);
+  }, [filterStatus, load]);
 
   // Filter list based on search query
   const filteredList = list.filter((item) => {

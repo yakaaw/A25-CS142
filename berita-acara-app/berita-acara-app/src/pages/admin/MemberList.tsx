@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     Container,
     Paper,
@@ -64,7 +64,7 @@ const MemberList: React.FC = () => {
     const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
     const [editRoleValue, setEditRoleValue] = useState('');
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
         const result = await getAllUsers();
         if (result.success && result.data) {
@@ -73,11 +73,11 @@ const MemberList: React.FC = () => {
             showToast('Gagal mengambil data pengguna', 'error');
         }
         setLoading(false);
-    };
+    }, [showToast]);
 
     useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [fetchUsers]);
 
     const handleRoleChange = async () => {
         if (!selectedUser?.uid) return;
