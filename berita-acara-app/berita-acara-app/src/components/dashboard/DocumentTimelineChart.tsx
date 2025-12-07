@@ -51,7 +51,7 @@ const DocumentTimelineChart: React.FC<DocumentTimelineChartProps> = ({ data, loa
                         <Legend />
                         <Line type="monotone" dataKey="bapb" stroke="#1976d2" strokeWidth={2} name="BAPB" />
                         <Line type="monotone" dataKey="bapp" stroke="#ff9800" strokeWidth={2} name="BAPP" />
-                    </LineChart>
+                    </LineChart> as any
                 </ResponsiveContainer>
             </CardContent>
         </Card>

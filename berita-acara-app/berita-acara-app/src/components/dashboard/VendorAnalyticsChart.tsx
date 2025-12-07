@@ -69,13 +69,13 @@ const VendorAnalyticsChart: React.FC<VendorAnalyticsChartProps> = ({ data, loadi
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis type="number" />
                         <YAxis dataKey="vendorName" type="category" />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip content={<CustomTooltip /> as any} />
                         <Bar dataKey="documentCount" name="Documents">
                             {data.map((entry) => (
                                 <Cell key={entry.vendorId} fill={getColor(entry.approvalRate)} />
-                            ))}
+                            )) as any}
                         </Bar>
-                    </BarChart>
+                    </BarChart> as any
                 </ResponsiveContainer>
             </CardContent>
         </Card>

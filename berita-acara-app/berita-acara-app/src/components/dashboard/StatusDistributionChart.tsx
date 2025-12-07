@@ -64,11 +64,11 @@ const StatusDistributionChart: React.FC<StatusDistributionChartProps> = ({ data,
                         >
                             {chartData.map((entry) => (
                                 <Cell key={entry.name} fill={entry.color} />
-                            ))}
+                            )) as any}
                         </Pie>
                         <Tooltip />
                         <Legend />
-                    </PieChart>
+                    </PieChart> as any
                 </ResponsiveContainer>
             </CardContent>
         </Card>
