@@ -79,6 +79,17 @@ export const createUser = async (email: string, password: string, userData: { na
     }
 };
 
+export const updateUserDetails = async (uid: string, updates: Partial<UserProfile>) => {
+    try {
+        const docRef = doc(db, COLLECTION_NAME, uid);
+        await updateDoc(docRef, updates);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating user details:', error);
+        return { success: false, error: error.message };
+    }
+};
+
 export const deleteUser = async (uid: string) => {
     try {
         // Note: This only deletes the user's profile in Firestore.

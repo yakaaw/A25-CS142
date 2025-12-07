@@ -33,17 +33,18 @@ import {
     VisibilityOff as VisibilityOffIcon,
     Close as CloseIcon,
     MoreVert as MoreVertIcon,
-    Edit as EditIcon,
 } from '@mui/icons-material';
-import { getAllUsers, updateUserRole, createUser, deleteUser } from '../../services/userService';
+import { getAllUsers, createUser, deleteUser } from '../../services/userService';
 import { UserProfile } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import PageHeader from '../../components/PageHeader';
+import { useNavigate } from 'react-router-dom';
 
 const MemberList: React.FC = () => {
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const { showToast } = useToast();
+    const navigate = useNavigate();
 
     // Add Member State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -60,9 +61,8 @@ const MemberList: React.FC = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
-    // Edit Role State
-    const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
-    const [editRoleValue, setEditRoleValue] = useState('');
+    // Delete Confirmation Dialog
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);
@@ -79,20 +79,7 @@ const MemberList: React.FC = () => {
         fetchUsers();
     }, [fetchUsers]);
 
-    const handleRoleChange = async () => {
-        if (!selectedUser?.uid) return;
 
-        const result = await updateUserRole(selectedUser.uid, editRoleValue);
-        if (result.success) {
-            showToast('Role pengguna berhasil diperbarui', 'success');
-            fetchUsers();
-            setIsEditRoleOpen(false);
-            setEditRoleValue('');
-            setSelectedUser(null);
-        } else {
-            showToast('Gagal memperbarui role', 'error');
-        }
-    };
 
     const handleCreateMember = async () => {
         if (!newMember.email || !newMember.password || !newMember.name) {
@@ -117,19 +104,23 @@ const MemberList: React.FC = () => {
         setCreating(false);
     };
 
-    const handleDeleteMember = async () => {
-        if (!selectedUser?.uid || !selectedUser?.email) return;
+    const handleDeleteClick = () => {
+        setDeleteDialogOpen(true);
+        setAnchorEl(null);
+    };
 
-        if (globalThis.confirm(`Apakah Anda yakin ingin menghapus anggota ${selectedUser.email}? Akses mereka akan dicabut.`)) {
-            const result = await deleteUser(selectedUser.uid);
-            if (result.success) {
-                showToast('Anggota berhasil dihapus', 'success');
-                fetchUsers();
-            } else {
-                showToast('Gagal menghapus anggota', 'error');
-            }
+    const handleDeleteMember = async () => {
+        if (!selectedUser?.uid) return;
+
+        const result = await deleteUser(selectedUser.uid);
+        if (result.success) {
+            showToast('Anggota berhasil dihapus', 'success');
+            fetchUsers();
+        } else {
+            showToast('Gagal menghapus anggota', 'error');
         }
-        handleMenuClose();
+        setDeleteDialogOpen(false);
+        setSelectedUser(null);
     };
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, user: UserProfile) => {
@@ -142,12 +133,13 @@ const MemberList: React.FC = () => {
         setSelectedUser(null);
     };
 
-    const handleEditClick = () => {
-        if (selectedUser) {
-            setEditRoleValue(selectedUser.role || 'vendor');
-            setIsEditRoleOpen(true);
+
+
+    const handleViewDetailClick = () => {
+        if (selectedUser?.uid) {
+            navigate(`/admin/members/${selectedUser.uid}`);
         }
-        setAnchorEl(null); // Keep selectedUser for the dialog
+        handleMenuClose();
     };
 
     const getRoleColor = (role: string) => {
@@ -232,19 +224,18 @@ const MemberList: React.FC = () => {
                 </Table>
             </TableContainer>
 
-            {/* Action Menu */}
             <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
             >
-                <MenuItem onClick={handleEditClick}>
+                <MenuItem onClick={handleViewDetailClick}>
                     <ListItemIcon>
-                        <EditIcon fontSize="small" />
+                        <VisibilityIcon fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText>Edit Role</ListItemText>
+                    <ListItemText>View Detail</ListItemText>
                 </MenuItem>
-                <MenuItem onClick={handleDeleteMember} sx={{ color: 'error.main' }}>
+                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
                     <ListItemIcon>
                         <DeleteIcon fontSize="small" color="error" />
                     </ListItemIcon>
@@ -252,36 +243,25 @@ const MemberList: React.FC = () => {
                 </MenuItem>
             </Menu>
 
-            {/* Edit Role Dialog */}
-            <Dialog open={isEditRoleOpen} onClose={() => setIsEditRoleOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle>Ubah Role Pengguna</DialogTitle>
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle>Hapus Anggota?</DialogTitle>
                 <DialogContent>
-                    <Box sx={{ mt: 1 }}>
-                        <Typography variant="body2" gutterBottom sx={{ mb: 2 }}>
-                            Mengubah role untuk <strong>{selectedUser?.email}</strong>
-                        </Typography>
-                        <TextField
-                            select
-                            fullWidth
-                            label="Role"
-                            value={editRoleValue}
-                            onChange={(e) => setEditRoleValue(e.target.value)}
-                        >
-                            <MenuItem value="vendor">Vendor</MenuItem>
-                            <MenuItem value="pic_gudang">PIC Gudang</MenuItem>
-                            <MenuItem value="pemesan">Pemesan</MenuItem>
-                            <MenuItem value="direksi">Direksi</MenuItem>
-                            <MenuItem value="admin">Admin</MenuItem>
-                        </TextField>
-                    </Box>
+                    <Typography>
+                        Apakah Anda yakin ingin menghapus anggota <strong>{selectedUser?.email}</strong>?
+                        Akses mereka akan dicabut dan data tidak dapat dikembalikan.
+                    </Typography>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setIsEditRoleOpen(false)}>Batal</Button>
-                    <Button variant="contained" onClick={handleRoleChange}>
-                        Simpan
+                    <Button onClick={() => setDeleteDialogOpen(false)}>
+                        Batal
+                    </Button>
+                    <Button variant="contained" color="error" onClick={handleDeleteMember}>
+                        Ya, Hapus
                     </Button>
                 </DialogActions>
             </Dialog>
+
 
             {/* Add Member Dialog */}
             <Dialog open={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} maxWidth="sm" fullWidth>

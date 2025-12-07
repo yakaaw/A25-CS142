@@ -101,7 +101,7 @@ const SignatureUpload: React.FC<SignatureUploadProps> = ({
                 <Paper
                     variant="outlined"
                     sx={{
-                        p: 3,
+                        p: 4,
                         textAlign: 'center',
                         borderStyle: 'dashed',
                         borderWidth: 2,
@@ -116,23 +116,24 @@ const SignatureUpload: React.FC<SignatureUploadProps> = ({
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                 >
-                    <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                    <Button variant="contained" component="label">
-                        Upload Signature
-                        {' '}
-                        <input
-                            type="file"
-                            hidden
-                            onChange={handleFileChange}
-                            accept="image/png,image/jpeg"
-                        />
-                    </Button>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                        or drag and drop
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                        PNG or JPG, max 500KB
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <UploadIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
+                        <Button variant="contained" component="label">
+                            Upload Signature
+                            <input
+                                type="file"
+                                hidden
+                                onChange={handleFileChange}
+                                accept="image/png,image/jpeg"
+                            />
+                        </Button>
+                        <Typography variant="body2" color="text.secondary">
+                            or drag and drop
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            PNG or JPG, max 500KB
+                        </Typography>
+                    </Box>
                 </Paper>
             ) : (
                 <Paper

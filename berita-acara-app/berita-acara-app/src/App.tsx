@@ -13,6 +13,7 @@ import BAPPCreate from "./pages/bapp/BAPPCreate";
 import BAPPDetail from "./pages/bapp/BAPPDetail";
 import { ToastProvider } from "./context/ToastContext";
 import MemberList from "./pages/admin/MemberList";
+import MemberDetail from "./pages/admin/MemberDetail";
 import RoleManager from "./pages/admin/RoleManager";
 import SeedRoles from "./pages/admin/SeedRoles";
 import StatusBerkas from "./pages/StatusBerkas";
@@ -155,6 +156,16 @@ function App() {
             <PrivateRoute requiredPermission="manage_users">
               <Layout>
                 <MemberList />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/members/:uid"
+          element={
+            <PrivateRoute requiredPermission="manage_users">
+              <Layout>
+                <MemberDetail />
               </Layout>
             </PrivateRoute>
           }
