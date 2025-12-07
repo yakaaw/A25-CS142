@@ -44,7 +44,6 @@ const BAPPList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -61,6 +60,8 @@ const BAPPList: React.FC = () => {
   const navigate = useNavigate();
   const isAdmin = userProfile?.role === "admin";
 
+  const loadRef = React.useRef<any>(null);
+
   const load = useCallback(
     async (isLoadMore = false) => {
       if (isLoadMore) setLoadingMore(true);
@@ -69,7 +70,7 @@ const BAPPList: React.FC = () => {
       const res = await getAllBAPP({
         limit: 10,
         status: filterStatus,
-        lastDoc: isLoadMore ? lastDoc : undefined,
+        lastDoc: isLoadMore ? loadRef.current : undefined,
       });
 
       if (res.success) {
@@ -79,17 +80,18 @@ const BAPPList: React.FC = () => {
         } else {
           setList(newData);
         }
-        setLastDoc(res.lastDoc);
+        loadRef.current = res.lastDoc;
         setHasMore(newData.length === 10);
       }
 
       setLoading(false);
       setLoadingMore(false);
     },
-    [filterStatus, lastDoc]
+    [filterStatus]
   );
 
   useEffect(() => {
+    loadRef.current = null;
     load();
   }, [filterStatus, load]);
 
