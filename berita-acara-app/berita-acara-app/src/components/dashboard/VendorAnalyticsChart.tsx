@@ -65,17 +65,19 @@ const VendorAnalyticsChart: React.FC<VendorAnalyticsChartProps> = ({ data, loadi
                     By document count (color indicates approval rate)
                 </Typography>
                 <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis dataKey="vendorName" type="category" />
-                        <Tooltip content={<CustomTooltip /> as any} />
-                        <Bar dataKey="documentCount" name="Documents">
-                            {data.map((entry) => (
-                                <Cell key={entry.vendorId} fill={getColor(entry.approvalRate)} />
-                            )) as any}
-                        </Bar>
-                    </BarChart> as any
+                    {(
+                        <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" />
+                            <YAxis dataKey="vendorName" type="category" />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Bar dataKey="documentCount" name="Documents">
+                                {data.map((entry) => (
+                                    <Cell key={entry.vendorId} fill={getColor(entry.approvalRate)} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    ) as any}
                 </ResponsiveContainer>
             </CardContent>
         </Card>

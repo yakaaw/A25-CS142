@@ -30,9 +30,10 @@ import {
     Visibility as VisibilityIcon,
     MoreVert as MoreVertIcon,
     RestoreFromTrash as RestoreIcon,
+    DeleteForever as DeleteIcon,
 } from '@mui/icons-material';
-import { getArchivedBAPB, restoreBAPB, BAPB } from '../services/bapbService';
-import { getArchivedBAPP, restoreBAPP, BAPP } from '../services/bappService';
+import { getArchivedBAPB, restoreBAPB, deleteBAPB, BAPB } from '../services/bapbService';
+import { getArchivedBAPP, restoreBAPP, deleteBAPP, BAPP } from '../services/bappService';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import { useAuth } from '../context/AuthContext';
@@ -55,6 +56,10 @@ const ArchivePage: React.FC = () => {
     // Restore dialog state
     const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
     const [restoring, setRestoring] = useState(false);
+
+    // Delete dialog state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     const { userProfile } = useAuth();
     const { showToast } = useToast();
@@ -149,6 +154,32 @@ const ArchivePage: React.FC = () => {
         }
 
         setRestoring(false);
+    };
+
+    const handleDeleteClick = () => {
+        setDeleteDialogOpen(true);
+        handleMenuClose();
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedDocument?.id) return;
+
+        setDeleting(true);
+        const result = documentType === 'BAPB'
+            ? await deleteBAPB(selectedDocument.id)
+            : await deleteBAPP(selectedDocument.id);
+
+        if (result.success) {
+            showToast(`${documentType} berhasil dihapus permanen`, 'success');
+            setDeleteDialogOpen(false);
+            setSelectedDocument(null);
+            // Reload list
+            loadArchived();
+        } else {
+            showToast(`Gagal menghapus ${documentType}: ${result.error}`, 'error');
+        }
+
+        setDeleting(false);
     };
 
     if (loading) {
@@ -262,6 +293,14 @@ const ArchivePage: React.FC = () => {
                     <RestoreIcon fontSize="small" sx={{ mr: 1 }} />
                     Pulihkan
                 </MenuItem>
+                <MenuItem
+                    onClick={handleDeleteClick}
+                    disabled={!isAdmin}
+                    sx={{ color: 'error.main' }}
+                >
+                    <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                    Hapus Permanen
+                </MenuItem>
             </Menu>
 
             {/* Restore Confirmation Dialog */}
@@ -301,6 +340,50 @@ const ArchivePage: React.FC = () => {
                         disabled={restoring}
                     >
                         {restoring ? 'Memulihkan...' : 'Pulihkan'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => !deleting && setDeleteDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ color: 'error.main' }}>Konfirmasi Hapus Permanen</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2}>
+                        <Typography color="error" fontWeight={600}>
+                            ⚠️ PERINGATAN: Tindakan ini tidak dapat dibatalkan!
+                        </Typography>
+                        <Typography>
+                            Dokumen akan dihapus secara permanen dari database dan tidak dapat dipulihkan kembali.
+                        </Typography>
+
+                        {selectedDocument && (
+                            <Box sx={{ p: 2, bgcolor: 'error.lighter', borderRadius: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Nomor Dokumen
+                                </Typography>
+                                <Typography variant="body1" fontWeight={600}>
+                                    {selectedDocument.id}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+                        Batal
+                    </Button>
+                    <Button
+                        onClick={handleDeleteConfirm}
+                        variant="contained"
+                        color="error"
+                        disabled={deleting}
+                    >
+                        {deleting ? 'Menghapus...' : 'Hapus Permanen'}
                     </Button>
                 </DialogActions>
             </Dialog>

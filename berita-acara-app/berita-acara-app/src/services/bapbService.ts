@@ -345,3 +345,27 @@ export const restoreBAPB = async (id: string) => {
   }
 };
 
+export const deleteBAPB = async (id: string) => {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    // First check if document is archived
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      return { success: false, error: 'Document not found' };
+    }
+
+    const data = docSnap.data() as BAPB;
+    if (!data.isArchived) {
+      return { success: false, error: 'Only archived documents can be deleted' };
+    }
+
+    // Delete the document permanently
+    await import('firebase/firestore').then(({ deleteDoc }) => deleteDoc(docRef));
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting BAPB:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+

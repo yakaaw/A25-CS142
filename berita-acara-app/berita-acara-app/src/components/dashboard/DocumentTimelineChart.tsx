@@ -43,15 +43,17 @@ const DocumentTimelineChart: React.FC<DocumentTimelineChartProps> = ({ data, loa
                     Documents created over time
                 </Typography>
                 <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="bapb" stroke="#1976d2" strokeWidth={2} name="BAPB" />
-                        <Line type="monotone" dataKey="bapp" stroke="#ff9800" strokeWidth={2} name="BAPP" />
-                    </LineChart> as any
+                    {(
+                        <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="bapb" stroke="#1976d2" strokeWidth={2} name="BAPB" />
+                            <Line type="monotone" dataKey="bapp" stroke="#ff9800" strokeWidth={2} name="BAPP" />
+                        </LineChart>
+                    ) as any}
                 </ResponsiveContainer>
             </CardContent>
         </Card>

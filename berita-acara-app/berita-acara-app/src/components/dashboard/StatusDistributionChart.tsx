@@ -51,24 +51,26 @@ const StatusDistributionChart: React.FC<StatusDistributionChartProps> = ({ data,
             <CardContent>
                 <Typography variant="h6" gutterBottom>Status Distribution</Typography>
                 <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                        <Pie
-                            data={chartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                        >
-                            {chartData.map((entry) => (
-                                <Cell key={entry.name} fill={entry.color} />
-                            )) as any}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                    </PieChart> as any
+                    {(
+                        <PieChart>
+                            <Pie
+                                data={chartData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                            >
+                                {chartData.map((entry) => (
+                                    <Cell key={entry.name} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                        </PieChart>
+                    ) as any}
                 </ResponsiveContainer>
             </CardContent>
         </Card>
