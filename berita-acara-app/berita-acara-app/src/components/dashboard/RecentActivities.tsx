@@ -88,7 +88,7 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities, loading
                                 <ListItemText
                                     primary={
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Typography variant="body2">
+                                            <Typography variant="body2" component="span">
                                                 <strong>{activity.userName}</strong> {activity.type}
                                             </Typography>
                                             <Chip
@@ -101,14 +101,16 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities, loading
                                     }
                                     secondary={
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" color="text.secondary" component="span">
                                                 {activity.documentNumber}
                                             </Typography>
-                                            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                            <Typography variant="caption" color="text.secondary" component="span" sx={{ ml: 1 }}>
                                                 • {getRelativeTime(activity.timestamp)}
                                             </Typography>
                                         </Box>
                                     }
+                                    primaryTypographyProps={{ component: 'div' }}
+                                    secondaryTypographyProps={{ component: 'div' }}
                                 />
                             </ListItemButton>
                         </ListItem>
