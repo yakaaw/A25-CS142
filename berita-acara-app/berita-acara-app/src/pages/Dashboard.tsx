@@ -115,7 +115,7 @@ const Dashboard: React.FC = () => {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
                     <CircularProgress size={60} />
@@ -124,7 +124,7 @@ const Dashboard: React.FC = () => {
                 <>
                     <PageHeader
                         title="Dashboard"
-                        description="Selamat datang di sistem Berita Acara"
+                        description="Selamat datang di Reportify"
                     />
 
                     {/* Welcome Card */}

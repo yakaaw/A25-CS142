@@ -188,7 +188,7 @@ const RoleManager: React.FC = () => {
     }
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
             <PageHeader
                 title="Role & Access"
                 description={`${roles.length} Roles Configured`}

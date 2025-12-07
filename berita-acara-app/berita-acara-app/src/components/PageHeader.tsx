@@ -19,7 +19,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumbs = [], descri
         <Paper
             elevation={0}
             sx={{
-                p: 3,
+                p: 0,
                 mb: 3,
                 borderBottom: '1px solid',
                 borderColor: 'divider',

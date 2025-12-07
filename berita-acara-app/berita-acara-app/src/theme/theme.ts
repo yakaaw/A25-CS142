@@ -1,55 +1,65 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 // Create Material-UI theme with standard Material Design colors
 const theme = createTheme({
-    palette: {
-        mode: 'light',
-        primary: {
-            main: '#1976d2', // Material Blue
-        },
-        secondary: {
-            main: '#dc004e', // Material Pink
-        },
-        error: {
-            main: '#f44336',
-        },
-        warning: {
-            main: '#ff9800',
-        },
-        info: {
-            main: '#2196f3',
-        },
-        success: {
-            main: '#4caf50',
-        },
+  palette: {
+    mode: "light",
+    primary: {
+      main: "#1976d2", // Material Blue
     },
-    typography: {
-        fontFamily: [
-            '-apple-system',
-            'BlinkMacSystemFont',
-            '"Segoe UI"',
-            'Roboto',
-            '"Helvetica Neue"',
-            'Arial',
-            'sans-serif',
-        ].join(','),
+    secondary: {
+      main: "#dc004e", // Material Pink
     },
-    components: {
-        MuiButton: {
-            styleOverrides: {
-                root: {
-                    textTransform: 'none', // Disable uppercase transformation
-                },
-            },
-        },
-        MuiCard: {
-            styleOverrides: {
-                root: {
-                    borderRadius: 8,
-                },
-            },
-        },
+    error: {
+      main: "#f44336",
     },
+    warning: {
+      main: "#ff9800",
+    },
+    info: {
+      main: "#2196f3",
+    },
+    success: {
+      main: "#4caf50",
+    },
+  },
+  typography: {
+    fontFamily: [
+      "-apple-system",
+      "BlinkMacSystemFont",
+      '"Segoe UI"',
+      "Roboto",
+      '"Helvetica Neue"',
+      "Arial",
+      "sans-serif",
+    ].join(","),
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: "none", // Disable uppercase transformation
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          paddingLeft: 20,
+          paddingRight: 20,
+          marginTop: 18,
+          marginBottom: 18,
+        },
+      },
+    },
+  },
 });
 
 export default theme;

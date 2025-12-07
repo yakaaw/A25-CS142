@@ -150,7 +150,7 @@ const StatusBerkas: React.FC = () => {
     ];
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
             <PageHeader
                 title="Status Berkas"
                 description="Monitoring status semua Berita Acara"

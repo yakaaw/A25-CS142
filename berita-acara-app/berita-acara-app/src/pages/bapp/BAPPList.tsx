@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Container,
   Paper,
@@ -16,45 +16,53 @@ import {
   TextField,
   MenuItem,
   Stack,
-} from '@mui/material';
-import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon, Search as SearchIcon } from '@mui/icons-material';
-import { getAllBAPP, BAPP } from '../../services/bappService';
-import { Link } from 'react-router-dom';
-import PageHeader from '../../components/PageHeader';
+} from "@mui/material";
+import {
+  Add as AddIcon,
+  Visibility as VisibilityIcon,
+  FilterList as FilterListIcon,
+  Search as SearchIcon,
+} from "@mui/icons-material";
+import { getAllBAPP, BAPP } from "../../services/bappService";
+import { Link } from "react-router-dom";
+import PageHeader from "../../components/PageHeader";
 
 const BAPPList: React.FC = () => {
   const [list, setList] = useState<BAPP[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(async (isLoadMore = false) => {
-    if (isLoadMore) setLoadingMore(true);
-    else setLoading(true);
+  const load = useCallback(
+    async (isLoadMore = false) => {
+      if (isLoadMore) setLoadingMore(true);
+      else setLoading(true);
 
-    const res = await getAllBAPP({
-      limit: 10,
-      status: filterStatus,
-      lastDoc: isLoadMore ? lastDoc : undefined,
-    });
+      const res = await getAllBAPP({
+        limit: 10,
+        status: filterStatus,
+        lastDoc: isLoadMore ? lastDoc : undefined,
+      });
 
-    if (res.success) {
-      const newData = res.data ?? [];
-      if (isLoadMore) {
-        setList((prev) => [...prev, ...newData]);
-      } else {
-        setList(newData);
+      if (res.success) {
+        const newData = res.data ?? [];
+        if (isLoadMore) {
+          setList((prev) => [...prev, ...newData]);
+        } else {
+          setList(newData);
+        }
+        setLastDoc(res.lastDoc);
+        setHasMore(newData.length === 10);
       }
-      setLastDoc(res.lastDoc);
-      setHasMore(newData.length === 10);
-    }
 
-    setLoading(false);
-    setLoadingMore(false);
-  }, [filterStatus]);
+      setLoading(false);
+      setLoadingMore(false);
+    },
+    [filterStatus]
+  );
 
   useEffect(() => {
     load();
@@ -74,18 +82,25 @@ const BAPPList: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved':
-        return 'success';
-      case 'rejected':
-        return 'error';
+      case "approved":
+        return "success";
+      case "rejected":
+        return "error";
       default:
-        return 'warning';
+        return "warning";
     }
   };
 
   if (loading)
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
         <Stack alignItems="center" spacing={2}>
           <CircularProgress />
           <Typography>Loading BAPP...</Typography>
@@ -94,16 +109,22 @@ const BAPPList: React.FC = () => {
     );
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
       <PageHeader
         title="Daftar BAPP"
         description="Berita Acara Penyelesaian Pekerjaan"
-        breadcrumbs={[
-          { label: 'BAPP' }
-        ]}
+        breadcrumbs={[{ label: "BAPP" }]}
       />
 
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+      <Box
+        sx={{
+          mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
         <TextField
           size="small"
           placeholder="Cari ID, vendor, atau status..."
@@ -112,7 +133,9 @@ const BAPPList: React.FC = () => {
           sx={{ flexGrow: 1, maxWidth: 400 }}
           slotProps={{
             input: {
-              startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
+              startAdornment: (
+                <SearchIcon sx={{ mr: 1, color: "action.active" }} />
+              ),
             },
           }}
         />
@@ -125,7 +148,9 @@ const BAPPList: React.FC = () => {
             sx={{ minWidth: 150 }}
             slotProps={{
               input: {
-                startAdornment: <FilterListIcon sx={{ mr: 1, color: 'action.active' }} />,
+                startAdornment: (
+                  <FilterListIcon sx={{ mr: 1, color: "action.active" }} />
+                ),
               },
             }}
           >
@@ -134,7 +159,12 @@ const BAPPList: React.FC = () => {
             <MenuItem value="approved">Approved</MenuItem>
             <MenuItem value="rejected">Rejected</MenuItem>
           </TextField>
-          <Button variant="contained" startIcon={<AddIcon />} component={Link} to="/bapp/new">
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            component={Link}
+            to="/bapp/new"
+          >
             Buat BAPP Baru
           </Button>
         </Stack>
@@ -157,9 +187,15 @@ const BAPPList: React.FC = () => {
                 <TableCell>{b.id}</TableCell>
                 <TableCell>{b.vendorId}</TableCell>
                 <TableCell>
-                  <Chip label={b.status} size="small" color={getStatusColor(b.status || 'pending') as any} />
+                  <Chip
+                    label={b.status}
+                    size="small"
+                    color={getStatusColor(b.status || "pending") as any}
+                  />
                 </TableCell>
-                <TableCell>{new Date(b.createdAt || '').toLocaleDateString('id-ID')}</TableCell>
+                <TableCell>
+                  {new Date(b.createdAt || "").toLocaleDateString("id-ID")}
+                </TableCell>
                 <TableCell align="right">
                   <Button
                     component={Link}
@@ -178,10 +214,10 @@ const BAPPList: React.FC = () => {
       </TableContainer>
 
       {hasMore && (
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
           <Button onClick={() => load(true)} disabled={loadingMore}>
             {loadingMore ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}
-            {loadingMore ? 'Memuat...' : 'Muat Lebih Banyak'}
+            {loadingMore ? "Memuat..." : "Muat Lebih Banyak"}
           </Button>
         </Box>
       )}

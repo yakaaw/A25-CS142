@@ -94,7 +94,7 @@ const BAPBList: React.FC = () => {
     );
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
       <PageHeader
         title="Daftar BAPB"
         description="Berita Acara Penerimaan Barang"

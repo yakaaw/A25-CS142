@@ -175,7 +175,7 @@ const MemberList: React.FC = () => {
         );
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
             <PageHeader
                 title="Manajemen Anggota"
                 description="Kelola role dan akses pengguna"
