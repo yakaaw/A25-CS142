@@ -120,7 +120,7 @@ const MemberList: React.FC = () => {
     const handleDeleteMember = async () => {
         if (!selectedUser?.uid || !selectedUser?.email) return;
 
-        if (window.confirm(`Apakah Anda yakin ingin menghapus anggota ${selectedUser.email}? Akses mereka akan dicabut.`)) {
+        if (globalThis.confirm(`Apakah Anda yakin ingin menghapus anggota ${selectedUser.email}? Akses mereka akan dicabut.`)) {
             const result = await deleteUser(selectedUser.uid);
             if (result.success) {
                 showToast('Anggota berhasil dihapus', 'success');

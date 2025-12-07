@@ -40,6 +40,14 @@ const getButtonIcon = (loading: boolean, isApproval: boolean) => {
     return isApproval ? <ApproveIcon /> : <RejectIcon />;
 };
 
+// Helper function to get button text
+const getButtonText = (loading: boolean, isApproval: boolean): string => {
+    if (loading) {
+        return 'Memproses...';
+    }
+    return isApproval ? 'Setujui Berkas' : 'Tolak Berkas';
+};
+
 const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
     open,
     onClose,
@@ -231,12 +239,7 @@ const ApprovalDialog: React.FC<ApprovalDialogProps> = ({
                     startIcon={getButtonIcon(loading, isApproval)}
                     sx={{ px: 4 }}
                 >
-                    {loading
-                        ? 'Memproses...'
-                        : isApproval
-                            ? 'Setujui Berkas'
-                            : 'Tolak Berkas'
-                    }
+                    {getButtonText(loading, isApproval)}
                 </Button>
             </DialogActions>
         </Dialog>

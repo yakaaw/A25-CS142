@@ -193,6 +193,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                                     }}
                                 >
                                     Pilih File
+                                    {' '}
                                     <input
                                         type="file"
                                         hidden

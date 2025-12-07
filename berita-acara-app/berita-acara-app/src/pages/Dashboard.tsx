@@ -1,366 +1,370 @@
 import React, { useEffect, useState } from 'react';
 import {
     Container,
-    Card,
-    CardContent,
-    Typography,
     Box,
-    Avatar,
-    Chip,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    Link as MuiLink,
-    Stack,
+    Typography,
+    Button,
+    MenuItem,
+    TextField,
     CircularProgress,
+    Stack
 } from '@mui/material';
 import {
     Description as DescriptionIcon,
+    CheckCircle as CheckCircleIcon,
     Schedule as ScheduleIcon,
-    Warning as WarningIcon,
-    Person as PersonIcon,
-    ArrowForward as ArrowForwardIcon,
+    Speed as SpeedIcon,
+    Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { getAllBAPB } from '../services/bapbService';
-import { getAllBAPP } from '../services/bappService';
-import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
+
+// Dashboard components
+import StatsCard from '../components/dashboard/StatsCard';
+import StatusDistributionChart from '../components/dashboard/StatusDistributionChart';
+import DocumentTimelineChart from '../components/dashboard/DocumentTimelineChart';
+import VendorAnalyticsChart from '../components/dashboard/VendorAnalyticsChart';
+import RecentActivities from '../components/dashboard/RecentActivities';
+import PendingApprovals from '../components/dashboard/PendingApprovals';
+import MyDocumentsStatus from '../components/dashboard/MyDocumentsStatus';
+import SystemOverview from '../components/dashboard/SystemOverview';
+import HighValuePendingApprovals from '../components/dashboard/HighValuePendingApprovals';
+
+// Dashboard service
+import {
+    getDocumentStats,
+    getApprovalMetrics,
+    getVendorStats,
+    getTimelineData,
+    getRecentActivities,
+    getPendingApprovals
+} from '../services/dashboardService';
+
+import {
+    DocumentStats,
+    ApprovalMetrics,
+    VendorStat,
+    TimelineDataPoint,
+    Activity,
+    PendingApproval
+} from '../types/dashboardTypes';
 
 const Dashboard: React.FC = () => {
     const { userProfile } = useAuth();
-    const [stats, setStats] = useState({
-        totalBAPB: 0,
-        totalBAPP: 0,
-        pendingBAPB: 0,
-        pendingBAPP: 0,
-        approvedBAPB: 0,
-        approvedBAPP: 0,
-    });
-    const [actionItems, setActionItems] = useState<{ type: 'BAPB' | 'BAPP'; id: string; date: string; status: string }[]>([]);
-    const [mySubmissions, setMySubmissions] = useState<{ type: 'BAPB' | 'BAPP'; id: string; date: string; status: string }[]>([]);
+
+    // State
     const [loading, setLoading] = useState(true);
+    const [dateRange, setDateRange] = useState('30'); // days
+    const [docStats, setDocStats] = useState<DocumentStats>({
+        total: 0,
+        bapb: 0,
+        bapp: 0,
+        byStatus: { pending: 0, approved: 0, rejected: 0 },
+        byStage: {}
+    });
+    const [approvalMetrics, setApprovalMetrics] = useState<ApprovalMetrics>({
+        avgApprovalTime: 0,
+        pendingCount: 0,
+        approvedThisMonth: 0,
+        rejectedThisMonth: 0,
+        approvalRate: 0
+    });
+    const [vendorStats, setVendorStats] = useState<VendorStat[]>([]);
+    const [timelineData, setTimelineData] = useState<TimelineDataPoint[]>([]);
+    const [activities, setActivities] = useState<Activity[]>([]);
+    const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const [bapbResult, bappResult] = await Promise.all([getAllBAPB(), getAllBAPP()]);
+    // Load dashboard data
+    const loadDashboardData = async () => {
+        setLoading(true);
+        try {
+            const userId = userProfile?.uid || '';
+            const userRole = userProfile?.role || '';
 
-                if (bapbResult.success && bapbResult.data && bappResult.success && bappResult.data) {
-                    const bapbData = bapbResult.data;
-                    const bappData = bappResult.data;
+            const [stats, metrics, vendors, timeline, recentActivities, pending] = await Promise.all([
+                getDocumentStats(userId, userRole),
+                getApprovalMetrics(userId, userRole),
+                getVendorStats(userId, userRole, 10),
+                getTimelineData(userId, userRole, 6),
+                getRecentActivities(userId, userRole, 10),
+                getPendingApprovals(userId, userRole)
+            ]);
 
-                    setStats({
-                        totalBAPB: bapbData.length,
-                        totalBAPP: bappData.length,
-                        pendingBAPB: bapbData.filter((item) => item.status === 'pending').length,
-                        pendingBAPP: bappData.filter((item) => item.status === 'pending').length,
-                        approvedBAPB: bapbData.filter((item) => item.status === 'approved').length,
-                        approvedBAPP: bappData.filter((item) => item.status === 'approved').length,
-                    });
-
-                    const newActionItems: { type: 'BAPB' | 'BAPP'; id: string; date: string; status: string }[] = [];
-
-                    if (userProfile?.role === 'pic_gudang') {
-                        bapbData.forEach((d) => {
-                            if (d.currentStage === 'waiting_pic') newActionItems.push({ type: 'BAPB', id: d.id!, date: d.createdAt || '', status: d.status || 'pending' });
-                        });
-                        bappData.forEach((d) => {
-                            if (d.currentStage === 'waiting_pic') newActionItems.push({ type: 'BAPP', id: d.id!, date: d.createdAt || '', status: d.status || 'pending' });
-                        });
-                    } else if (userProfile?.role === 'direksi') {
-                        bapbData.forEach((d) => {
-                            if (d.currentStage === 'waiting_direksi') newActionItems.push({ type: 'BAPB', id: d.id!, date: d.createdAt || '', status: d.status || 'pending' });
-                        });
-                        bappData.forEach((d) => {
-                            if (d.currentStage === 'waiting_direksi') newActionItems.push({ type: 'BAPP', id: d.id!, date: d.createdAt || '', status: d.status || 'pending' });
-                        });
-                    }
-                    setActionItems(newActionItems);
-
-                    if (userProfile?.role === 'vendor') {
-                        const myItems: { type: 'BAPB' | 'BAPP'; id: string; date: string; status: string }[] = [];
-                        bapbData.filter((d) => d.vendorId === userProfile.uid || d.vendorId === userProfile.email).forEach((d) => {
-                            myItems.push({ type: 'BAPB', id: d.id!, date: d.createdAt || '', status: d.status || 'pending' });
-                        });
-                        bappData.filter((d) => d.vendorId === userProfile.uid || d.vendorId === userProfile.email).forEach((d) => {
-                            myItems.push({ type: 'BAPP', id: d.id!, date: d.createdAt || '', status: d.status || 'pending' });
-                        });
-                        setMySubmissions(myItems);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching dashboard stats:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
-    }, [userProfile]);
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'approved':
-                return 'success';
-            case 'rejected':
-                return 'error';
-            default:
-                return 'warning';
+            setDocStats(stats);
+            setApprovalMetrics(metrics);
+            setVendorStats(vendors);
+            setTimelineData(timeline);
+            setActivities(recentActivities);
+            setPendingApprovals(pending);
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
+    useEffect(() => {
+        if (userProfile) {
+            loadDashboardData();
+        }
+    }, [userProfile]);
+
+    const handleRefresh = () => {
+        loadDashboardData();
+    };
+
     return (
-        <Container maxWidth="lg" sx={{ mt: 2, mb: 2 }}>
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            {/* Header with controls */}
+            <Box sx={{ mb: 3 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                    <Box>
+                        <Typography variant="h4" fontWeight={700} gutterBottom>
+                            Dashboard Analytics
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Selamat datang, {userProfile?.name || 'User'}! ({userProfile?.role?.replace('_', ' ')})
+                        </Typography>
+                    </Box>
+
+                    <Stack direction="row" spacing={2}>
+                        <TextField
+                            select
+                            size="small"
+                            value={dateRange}
+                            onChange={(e) => setDateRange(e.target.value)}
+                            sx={{ minWidth: 150 }}
+                            label="Period"
+                        >
+                            <MenuItem value="7">Last 7 days</MenuItem>
+                            <MenuItem value="30">Last 30 days</MenuItem>
+                            <MenuItem value="90">Last 3 months</MenuItem>
+                        </TextField>
+
+                        <Button
+                            variant="outlined"
+                            startIcon={<RefreshIcon />}
+                            onClick={handleRefresh}
+                            disabled={loading}
+                        >
+                            Refresh
+                        </Button>
+                    </Stack>
+                </Stack>
+            </Box>
+
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
                     <CircularProgress size={60} />
                 </Box>
             ) : (
                 <>
-                    <PageHeader
-                        title="Dashboard"
-                        description="Selamat datang di Reportify"
-                    />
+                    {/* VENDOR DASHBOARD */}
+                    {userProfile?.role === 'vendor' && (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+                            {/* Vendor-specific widget */}
+                            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                                <MyDocumentsStatus stats={docStats} loading={loading} />
+                            </Box>
 
-                    {/* Welcome Card */}
-                    <Card sx={{ mb: 4, background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Avatar sx={{ width: 56, height: 56, bgcolor: 'rgba(255,255,255,0.3)' }}>
-                                    <PersonIcon />
-                                </Avatar>
-                                <Box>
-                                    <Typography variant="h5" fontWeight={700}>
-                                        Selamat Datang, {userProfile?.name || 'User'}!
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ opacity: 0.9, textTransform: 'capitalize' }}>
-                                        Role: {userProfile?.role?.replace('_', ' ') || '—'}
-                                    </Typography>
+                            {/* Charts for vendor */}
+                            <Box>
+                                <StatusDistributionChart data={docStats.byStatus} />
+                            </Box>
+                            <Box>
+                                <DocumentTimelineChart data={timelineData} />
+                            </Box>
+
+                            {/* Recent activities */}
+                            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                                <RecentActivities activities={activities} />
+                            </Box>
+                        </Box>
+                    )}
+
+                    {/* ADMIN DASHBOARD */}
+                    {userProfile?.role === 'admin' && (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+                            {/* Stats Cards Row */}
+                            <StatsCard
+                                title="Total Documents"
+                                value={docStats.total}
+                                icon={<DescriptionIcon />}
+                                color="primary"
+                                subtitle={`${docStats.bapb} BAPB, ${docStats.bapp} BAPP`}
+                            />
+                            <StatsCard
+                                title="Pending Approvals"
+                                value={approvalMetrics.pendingCount}
+                                icon={<ScheduleIcon />}
+                                color="warning"
+                                subtitle="Awaiting review"
+                            />
+                            <StatsCard
+                                title="Approved This Month"
+                                value={approvalMetrics.approvedThisMonth}
+                                icon={<CheckCircleIcon />}
+                                color="success"
+                                subtitle={`${approvalMetrics.approvalRate}% approval rate`}
+                            />
+                            <StatsCard
+                                title="Avg Approval Time"
+                                value={`${approvalMetrics.avgApprovalTime}h`}
+                                icon={<SpeedIcon />}
+                                color="info"
+                                subtitle="Average processing time"
+                            />
+
+                            {/* System Overview - Admin only */}
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <SystemOverview totalDocs={docStats.total} pendingDocs={approvalMetrics.pendingCount} />
+                            </Box>
+
+                            {/* Charts */}
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <StatusDistributionChart data={docStats.byStatus} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <DocumentTimelineChart data={timelineData} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <VendorAnalyticsChart data={vendorStats} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <RecentActivities activities={activities} />
+                            </Box>
+
+                            {/* Pending Approvals */}
+                            {pendingApprovals.length > 0 && (
+                                <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                                    <PendingApprovals approvals={pendingApprovals} />
                                 </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
+                            )}
+                        </Box>
+                    )}
 
-                    {/* Action Items */}
-                    {actionItems.length > 0 && (
-                        <Box sx={{ mb: 4 }}>
-                            <Typography variant="h6" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <WarningIcon color="warning" />
-                                Menunggu Persetujuan Anda
-                            </Typography>
-                            <Box
-                                sx={{
-                                    display: 'grid',
-                                    gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-                                    gap: 2,
-                                }}
-                            >
-                                {actionItems.map((item) => (
-                                    <Card
-                                        key={`${item.type}-${item.id}`}
-                                        component={Link}
-                                        to={`/${item.type.toLowerCase()}/${item.id}`}
-                                        sx={{
-                                            textDecoration: 'none',
-                                            '&:hover': { boxShadow: 4 },
-                                            transition: 'box-shadow 0.2s',
-                                        }}
-                                    >
-                                        <CardContent>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                                <Box>
-                                                    <Chip label={item.type} size="small" color="primary" sx={{ mb: 1 }} />
-                                                    <Typography variant="caption" display="block" color="text.secondary">
-                                                        {new Date(item.date).toLocaleDateString('id-ID')}
-                                                    </Typography>
-                                                </Box>
-                                                <ArrowForwardIcon color="action" />
-                                            </Box>
-                                            <Typography variant="body1" fontWeight={600}>
-                                                #{item.id}
-                                            </Typography>
-                                            <Typography variant="body2" color="warning.main">
-                                                Perlu Review
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                    {/* PIC DASHBOARD (PIC Gudang / PIC Pemesan) */}
+                    {(userProfile?.role === 'pic_gudang' || userProfile?.role === 'pic_pemesan') && (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+                            {/* Stats Cards Row */}
+                            <StatsCard
+                                title="Total Documents"
+                                value={docStats.total}
+                                icon={<DescriptionIcon />}
+                                color="primary"
+                                subtitle={`${docStats.bapb} BAPB, ${docStats.bapp} BAPP`}
+                            />
+                            <StatsCard
+                                title="Pending Your Review"
+                                value={pendingApprovals.length}
+                                icon={<ScheduleIcon />}
+                                color="warning"
+                                subtitle="Awaiting your approval"
+                            />
+                            <StatsCard
+                                title="Approved This Month"
+                                value={approvalMetrics.approvedThisMonth}
+                                icon={<CheckCircleIcon />}
+                                color="success"
+                                subtitle={`${approvalMetrics.approvalRate}% approval rate`}
+                            />
+                            <StatsCard
+                                title="Avg Approval Time"
+                                value={`${approvalMetrics.avgApprovalTime}h`}
+                                icon={<SpeedIcon />}
+                                color="info"
+                                subtitle="Average processing time"
+                            />
+
+                            {/* Pending Approvals - Priority for PIC */}
+                            {pendingApprovals.length > 0 && (
+                                <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                                    <PendingApprovals
+                                        approvals={pendingApprovals}
+                                        title="Documents Awaiting Your Review"
+                                    />
+                                </Box>
+                            )}
+
+                            {/* Charts */}
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <StatusDistributionChart data={docStats.byStatus} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <DocumentTimelineChart data={timelineData} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <VendorAnalyticsChart data={vendorStats} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <RecentActivities activities={activities} />
                             </Box>
                         </Box>
                     )}
 
-                    {/* My Submissions (Vendor) */}
-                    {userProfile?.role === 'vendor' && mySubmissions.length > 0 && (
-                        <Box sx={{ mb: 4 }}>
-                            <Typography variant="h6" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <DescriptionIcon color="primary" />
-                                Pengajuan Terkini
-                            </Typography>
-                            <TableContainer component={Paper}>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Tipe</TableCell>
-                                            <TableCell>ID Dokumen</TableCell>
-                                            <TableCell>Tanggal</TableCell>
-                                            <TableCell>Status</TableCell>
-                                            <TableCell align="right">Aksi</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {mySubmissions.slice(0, 5).map((item) => (
-                                            <TableRow key={`${item.type}-${item.id}`} hover>
-                                                <TableCell sx={{ fontWeight: 600 }}>{item.type}</TableCell>
-                                                <TableCell>#{item.id}</TableCell>
-                                                <TableCell>{new Date(item.date).toLocaleDateString('id-ID')}</TableCell>
-                                                <TableCell>
-                                                    <Chip label={item.status} size="small" color={getStatusColor(item.status) as any} />
-                                                </TableCell>
-                                                <TableCell align="right">
-                                                    <MuiLink component={Link} to={`/${item.type.toLowerCase()}/${item.id}`}>
-                                                        Lihat
-                                                    </MuiLink>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                    {/* DIREKSI DASHBOARD */}
+                    {userProfile?.role === 'direksi' && (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+                            {/* Stats Cards Row */}
+                            <StatsCard
+                                title="Total Documents"
+                                value={docStats.total}
+                                icon={<DescriptionIcon />}
+                                color="primary"
+                                subtitle={`${docStats.bapb} BAPB, ${docStats.bapp} BAPP`}
+                            />
+                            <StatsCard
+                                title="Pending Your Approval"
+                                value={pendingApprovals.length}
+                                icon={<ScheduleIcon />}
+                                color="warning"
+                                subtitle="Awaiting your decision"
+                            />
+                            <StatsCard
+                                title="Approved This Month"
+                                value={approvalMetrics.approvedThisMonth}
+                                icon={<CheckCircleIcon />}
+                                color="success"
+                                subtitle={`${approvalMetrics.approvalRate}% approval rate`}
+                            />
+                            <StatsCard
+                                title="Avg Approval Time"
+                                value={`${approvalMetrics.avgApprovalTime}h`}
+                                icon={<SpeedIcon />}
+                                color="info"
+                                subtitle="Average processing time"
+                            />
+
+                            {/* High Priority Approvals - Direksi specific */}
+                            <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                                <HighValuePendingApprovals approvals={pendingApprovals} />
+                            </Box>
+
+                            {/* Executive Charts */}
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <StatusDistributionChart data={docStats.byStatus} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <DocumentTimelineChart data={timelineData} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <VendorAnalyticsChart data={vendorStats} />
+                            </Box>
+                            <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
+                                <RecentActivities activities={activities} />
+                            </Box>
+
+                            {/* All Pending Approvals */}
+                            {pendingApprovals.length > 0 && (
+                                <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
+                                    <PendingApprovals
+                                        approvals={pendingApprovals}
+                                        title="All Pending Approvals"
+                                    />
+                                </Box>
+                            )}
                         </Box>
                     )}
-
-                    {/* Stats Grid */}
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-                        Ringkasan Sistem
-                    </Typography>
-                    <Box
-                        sx={{
-                            display: 'grid',
-                            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-                            gap: 3,
-                        }}
-                    >
-                        <Card>
-                            <CardContent>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Box
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 2,
-                                            background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'white',
-                                        }}
-                                    >
-                                        <DescriptionIcon />
-                                    </Box>
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Total BAPB
-                                        </Typography>
-                                        <Typography variant="h4" fontWeight={700}>
-                                            {stats.totalBAPB}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Box
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 2,
-                                            background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'white',
-                                        }}
-                                    >
-                                        <DescriptionIcon />
-                                    </Box>
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Total BAPP
-                                        </Typography>
-                                        <Typography variant="h4" fontWeight={700}>
-                                            {stats.totalBAPP}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Box
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 2,
-                                            background: 'linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'white',
-                                        }}
-                                    >
-                                        <ScheduleIcon />
-                                    </Box>
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Pending BAPB
-                                        </Typography>
-                                        <Typography variant="h4" fontWeight={700}>
-                                            {stats.pendingBAPB}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent>
-                                <Stack direction="row" spacing={2} alignItems="center">
-                                    <Box
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 2,
-                                            background: 'linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: 'white',
-                                        }}
-                                    >
-                                        <ScheduleIcon />
-                                    </Box>
-                                    <Box>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Pending BAPP
-                                        </Typography>
-                                        <Typography variant="h4" fontWeight={700}>
-                                            {stats.pendingBAPP}
-                                        </Typography>
-                                    </Box>
-                                </Stack>
-                            </CardContent>
-                        </Card>
-                    </Box>
                 </>
             )}
         </Container>

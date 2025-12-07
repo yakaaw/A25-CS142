@@ -119,6 +119,7 @@ const SignatureUpload: React.FC<SignatureUploadProps> = ({
                     <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
                     <Button variant="contained" component="label">
                         Upload Signature
+                        {' '}
                         <input
                             type="file"
                             hidden

@@ -125,13 +125,13 @@ const ProfileSettings: React.FC = () => {
     | "warning" => {
     const colorMap: {
       [key: string]:
-        | "default"
-        | "primary"
-        | "secondary"
-        | "error"
-        | "info"
-        | "success"
-        | "warning";
+      | "default"
+      | "primary"
+      | "secondary"
+      | "error"
+      | "info"
+      | "success"
+      | "warning";
     } = {
       admin: "error",
       pic_gudang: "primary",
@@ -189,9 +189,10 @@ const ProfileSettings: React.FC = () => {
                       size="small"
                       component="label"
                       startIcon={<CloudUploadIcon />}
-                      sx={{ textTransform: "none" }}
+                      sx={{ textTransform: 'none' }}
                     >
                       Upload
+                      {' '}
                       <input
                         type="file"
                         hidden
@@ -200,29 +201,18 @@ const ProfileSettings: React.FC = () => {
                           const file = e.target.files?.[0];
                           if (file) {
                             if (file.size > 2 * 1024 * 1024) {
-                              showToast(
-                                "File size must be less than 2MB",
-                                "error"
-                              );
+                              showToast('File size must be less than 2MB', 'error');
                               return;
                             }
                             setLoadingProfile(true);
                             try {
-                              const { uploadFile } = await import(
-                                "../../services/storageService"
-                              );
-                              const url = await uploadFile(
-                                file,
-                                "profile-photos"
-                              );
+                              const { uploadFile } = await import('../../services/storageService');
+                              const url = await uploadFile(file, 'profile-photos');
                               await updateUserProfile({ photoURL: url });
-                              showToast(
-                                "Foto profil berhasil diupload",
-                                "success"
-                              );
+                              showToast('Foto profil berhasil diupload', 'success');
                             } catch (error) {
-                              console.error("Upload failed:", error);
-                              showToast("Upload gagal", "error");
+                              console.error('Upload failed:', error);
+                              showToast('Upload gagal', 'error');
                             } finally {
                               setLoadingProfile(false);
                             }
@@ -237,14 +227,11 @@ const ProfileSettings: React.FC = () => {
                         onClick={async () => {
                           setLoadingProfile(true);
                           try {
-                            await updateUserProfile({ photoURL: "" });
-                            showToast(
-                              "Foto profil berhasil dihapus",
-                              "success"
-                            );
+                            await updateUserProfile({ photoURL: '' });
+                            showToast('Foto profil berhasil dihapus', 'success');
                           } catch (error) {
-                            console.error("Remove failed:", error);
-                            showToast("Gagal menghapus foto", "error");
+                            console.error('Remove failed:', error);
+                            showToast('Gagal menghapus foto', 'error');
                           } finally {
                             setLoadingProfile(false);
                           }
@@ -351,8 +338,8 @@ const ProfileSettings: React.FC = () => {
                           <Typography variant="body2" fontWeight={600}>
                             {userProfile?.createdAt
                               ? new Date(
-                                  userProfile.createdAt
-                                ).toLocaleDateString("id-ID")
+                                userProfile.createdAt
+                              ).toLocaleDateString("id-ID")
                               : "-"}
                           </Typography>
                         </Box>
@@ -737,7 +724,7 @@ const ProfileSettings: React.FC = () => {
           </Box>
         </Drawer>
       </Box>
-    </Box>
+    </Box >
   );
 };
 

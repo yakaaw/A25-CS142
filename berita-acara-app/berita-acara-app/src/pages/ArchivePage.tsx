@@ -30,7 +30,6 @@ import {
     Visibility as VisibilityIcon,
     MoreVert as MoreVertIcon,
     RestoreFromTrash as RestoreIcon,
-    Archive as ArchiveIcon,
 } from '@mui/icons-material';
 import { getArchivedBAPB, restoreBAPB, BAPB } from '../services/bapbService';
 import { getArchivedBAPP, restoreBAPP, BAPP } from '../services/bappService';
