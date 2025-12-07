@@ -19,6 +19,7 @@ import StatusBerkas from "./pages/StatusBerkas";
 
 import Dashboard from "./pages/Dashboard";
 import ProfileSettings from "./pages/settings/ProfileSettings";
+import ArchivePage from "./pages/ArchivePage";
 
 function App() {
   return (
@@ -129,6 +130,18 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <StatusBerkas />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        {/* Archive Route - Admin Only */}
+        <Route
+          path="/archive"
+          element={
+            <PrivateRoute requiredPermission="manage_users">
+              <Layout>
+                <ArchivePage />
               </Layout>
             </PrivateRoute>
           }

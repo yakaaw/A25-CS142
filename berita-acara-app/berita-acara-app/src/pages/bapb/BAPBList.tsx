@@ -17,10 +17,14 @@ import {
   MenuItem,
   Stack,
 } from '@mui/material';
-import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon, Search as SearchIcon } from '@mui/icons-material';
-import { getAllBAPB, BAPB } from '../../services/bapbService';
-import { Link } from 'react-router-dom';
+import { Add as AddIcon, Visibility as VisibilityIcon, FilterList as FilterListIcon, Search as SearchIcon, MoreVert as MoreVertIcon, Archive as ArchiveIcon } from '@mui/icons-material';
+import { getAllBAPB, BAPB, archiveBAPB } from '../../services/bapbService';
+import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { getPendingStatusMessage } from '../../utils/statusHelper';
+import { IconButton, Menu, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material';
 
 const BAPBList: React.FC = () => {
   const [list, setList] = useState<BAPB[]>([]);
@@ -30,6 +34,19 @@ const BAPBList: React.FC = () => {
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Action menu state
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedBAPB, setSelectedBAPB] = useState<BAPB | null>(null);
+
+  // Archive dialog state
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+
+  const { userProfile } = useAuth();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const isAdmin = userProfile?.role === 'admin';
 
   const load = useCallback(async (isLoadMore = false) => {
     if (isLoadMore) setLoadingMore(true);
@@ -81,6 +98,46 @@ const BAPBList: React.FC = () => {
       default:
         return 'warning';
     }
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, bapb: BAPB) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedBAPB(bapb);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleViewDetail = () => {
+    if (selectedBAPB?.id) {
+      navigate(`/bapb/${selectedBAPB.id}`);
+    }
+    handleMenuClose();
+  };
+
+  const handleArchiveClick = () => {
+    setArchiveDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (!selectedBAPB?.id || !userProfile?.uid) return;
+
+    setArchiving(true);
+    const result = await archiveBAPB(selectedBAPB.id, userProfile.uid);
+
+    if (result.success) {
+      showToast('BAPB berhasil diarsipkan', 'success');
+      setArchiveDialogOpen(false);
+      setSelectedBAPB(null);
+      // Reload list
+      load();
+    } else {
+      showToast('Gagal mengarsipkan BAPB', 'error');
+    }
+
+    setArchiving(false);
   };
 
   if (loading)
@@ -161,15 +218,12 @@ const BAPBList: React.FC = () => {
                 </TableCell>
                 <TableCell>{new Date(b.createdAt || '').toLocaleDateString('id-ID')}</TableCell>
                 <TableCell align="right">
-                  <Button
-                    component={Link}
-                    to={`/bapb/${b.id}`}
+                  <IconButton
                     size="small"
-                    startIcon={<VisibilityIcon />}
-                    variant="outlined"
+                    onClick={(e) => handleMenuOpen(e, b)}
                   >
-                    Lihat
-                  </Button>
+                    <MoreVertIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -185,8 +239,76 @@ const BAPBList: React.FC = () => {
           </Button>
         </Box>
       )}
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleViewDetail}>
+          <VisibilityIcon fontSize="small" sx={{ mr: 1 }} />
+          View Detail
+        </MenuItem>
+        <MenuItem
+          onClick={handleArchiveClick}
+          disabled={!isAdmin}
+        >
+          <ArchiveIcon fontSize="small" sx={{ mr: 1 }} />
+          Arsipkan
+        </MenuItem>
+      </Menu>
+
+      {/* Archive Confirmation Dialog */}
+      <Dialog
+        open={archiveDialogOpen}
+        onClose={() => !archiving && setArchiveDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Konfirmasi Arsipkan BAPB</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Alert severity="warning">
+              Dokumen yang diarsipkan akan dipindahkan ke halaman arsip dan tidak akan muncul di daftar utama.
+            </Alert>
+
+            {selectedBAPB && (
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Nomor Dokumen
+                </Typography>
+                <Typography variant="body1" fontWeight={600} gutterBottom>
+                  {selectedBAPB.id}
+                </Typography>
+
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
+                  Status Saat Ini
+                </Typography>
+                <Typography variant="body2">
+                  {getPendingStatusMessage(selectedBAPB.currentStage || 'draft', 'BAPB')}
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setArchiveDialogOpen(false)} disabled={archiving}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleArchiveConfirm}
+            variant="contained"
+            color="warning"
+            disabled={archiving}
+          >
+            {archiving ? 'Mengarsipkan...' : 'Arsipkan'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
 
 export default BAPBList;
+
