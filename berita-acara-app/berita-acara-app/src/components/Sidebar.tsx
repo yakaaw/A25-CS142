@@ -121,7 +121,9 @@ const Sidebar: React.FC = () => {
             <List>
               {menuItems.map((item) => {
                 // Check permissions
-                if (item.permission && !permissions.includes(item.permission)) {
+                // Special case: pemesan role should see BAPP menu
+                const isPemesanBAPP = item.to === '/bapp' && userProfile?.role === 'pemesan';
+                if (item.permission && !permissions.includes(item.permission) && !isPemesanBAPP) {
                   return null;
                 }
 

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -12,16 +12,27 @@ interface PrivateRouteProps {
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles, requiredPermission }) => {
   const { currentUser, userProfile, loading, permissions } = useAuth();
   const { showToast } = useToast();
+  const location = useLocation();
+
+  // Special permission override for pemesan role accessing BAPP routes
+  const hasSpecialAccess = () => {
+    if (userProfile?.role === 'pemesan' && requiredPermission?.startsWith('bapp.')) {
+      return true;
+    }
+    return false;
+  };
+
+  const hasPermission = permissions.includes(requiredPermission || '') || hasSpecialAccess();
 
   useEffect(() => {
     if (!loading && currentUser) {
       if (allowedRoles && userProfile && !allowedRoles.includes(userProfile.role || '')) {
         showToast('Anda tidak memiliki akses ke halaman ini', 'error');
-      } else if (requiredPermission && !permissions.includes(requiredPermission)) {
+      } else if (requiredPermission && !hasPermission) {
         showToast('Anda tidak memiliki izin untuk mengakses halaman ini', 'error');
       }
     }
-  }, [loading, currentUser, allowedRoles, userProfile, requiredPermission, permissions, showToast]);
+  }, [loading, currentUser, allowedRoles, userProfile, requiredPermission, hasPermission, showToast]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -35,7 +46,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, allowedRoles, req
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiredPermission && !permissions.includes(requiredPermission)) {
+  if (requiredPermission && !hasPermission) {
     return <Navigate to="/dashboard" replace />;
   }
 

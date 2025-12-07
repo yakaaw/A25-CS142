@@ -27,7 +27,7 @@ service cloud.firestore {
     }
     
     function isPICPemesan() {
-      return getUserRole() == 'pic_pemesan';
+      return getUserRole() == 'pic_pemesan' || getUserRole() == 'pemesan';
     }
     
     function isDireksi() {

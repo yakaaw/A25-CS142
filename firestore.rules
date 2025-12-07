@@ -27,11 +27,11 @@ service cloud.firestore {
     // BAPP documents
     match /bapp/{document} {
       allow read: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vendor', 'pic_pemesan', 'direksi', 'admin'];
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vendor', 'pic_pemesan', 'pemesan', 'direksi', 'admin'];
       allow create: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vendor', 'admin'];
       allow update: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pic_pemesan', 'direksi', 'admin'];
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pic_pemesan', 'pemesan', 'direksi', 'admin'];
     }
   }
 }

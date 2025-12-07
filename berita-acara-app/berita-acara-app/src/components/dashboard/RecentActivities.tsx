@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, Typography, List, ListItem, ListItemButton, ListItemAvatar, ListItemText, Avatar, Box, Chip } from '@mui/material';
-import { CheckCircle, Cancel, Edit, Add, Archive as ArchiveIcon } from '@mui/icons-material';
+import { CheckCircle, Cancel, Edit, Add, Archive as ArchiveIcon, Schedule } from '@mui/icons-material';
 import { Activity } from '../../types/dashboardTypes';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,15 +15,34 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities, loading
     const getIcon = (type: Activity['type']) => {
         switch (type) {
             case 'approved':
-                return <CheckCircle color="success" />;
+                return <CheckCircle />;
             case 'rejected':
-                return <Cancel color="error" />;
+                return <Cancel />;
             case 'archived':
-                return <ArchiveIcon color="action" />;
+                return <ArchiveIcon />;
             case 'created':
-                return <Add color="primary" />;
+                return <Add />;
+            case 'updated':
+                return <Schedule />;
             default:
-                return <Edit color="action" />;
+                return <Edit />;
+        }
+    };
+
+    const getAvatarColors = (type: Activity['type']): { bgcolor: string; color: string } => {
+        switch (type) {
+            case 'approved':
+                return { bgcolor: 'success.light', color: 'success.main' };
+            case 'rejected':
+                return { bgcolor: 'error.light', color: 'error.main' };
+            case 'archived':
+                return { bgcolor: 'grey.200', color: 'grey.600' };
+            case 'created':
+                return { bgcolor: 'primary.light', color: 'primary.main' };
+            case 'updated':
+                return { bgcolor: 'warning.light', color: 'warning.main' };
+            default:
+                return { bgcolor: 'warning.light', color: 'warning.main' };
         }
     };
 
@@ -81,7 +100,10 @@ const RecentActivities: React.FC<RecentActivitiesProps> = ({ activities, loading
                         <ListItem key={activity.id} disablePadding>
                             <ListItemButton onClick={() => handleActivityClick(activity)}>
                                 <ListItemAvatar>
-                                    <Avatar sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
+                                    <Avatar sx={{
+                                        bgcolor: getAvatarColors(activity.type).bgcolor,
+                                        color: getAvatarColors(activity.type).color
+                                    }}>
                                         {getIcon(activity.type)}
                                     </Avatar>
                                 </ListItemAvatar>

@@ -41,11 +41,18 @@ const StatusBerkas: React.FC = () => {
     }[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Helper function to get status color
+    // Helper function to get status color for Chip
     const getStatusColor = (status: string): 'success' | 'error' | 'warning' => {
         if (status === 'approved') return 'success';
         if (status === 'rejected') return 'error';
         return 'warning';
+    };
+
+    // Helper function to get icon colors based on status
+    const getIconColors = (status: string): { bgcolor: string; color: string } => {
+        if (status === 'approved') return { bgcolor: 'success.light', color: 'success.main' };
+        if (status === 'rejected') return { bgcolor: 'error.light', color: 'error.main' };
+        return { bgcolor: 'warning.light', color: 'warning.main' }; // pending
     };
 
     useEffect(() => {
@@ -223,8 +230,8 @@ const StatusBerkas: React.FC = () => {
                                         <Avatar
                                             sx={{
                                                 mr: 2,
-                                                bgcolor: activity.type === 'BAPB' ? 'primary.light' : 'success.light',
-                                                color: activity.type === 'BAPB' ? 'primary.main' : 'success.main',
+                                                bgcolor: getIconColors(activity.status).bgcolor,
+                                                color: getIconColors(activity.status).color,
                                             }}
                                         >
                                             {activity.type === 'BAPB' ? <DescriptionIcon /> : <AssignmentIcon />}

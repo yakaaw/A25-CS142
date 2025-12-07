@@ -244,7 +244,7 @@ const Dashboard: React.FC = () => {
                     )}
 
                     {/* PIC DASHBOARD (PIC Gudang / PIC Pemesan) */}
-                    {(userProfile?.role === 'pic_gudang' || userProfile?.role === 'pic_pemesan') && (
+                    {(userProfile?.role === 'pic_gudang' || userProfile?.role === 'pic_pemesan' || userProfile?.role === 'pemesan') && (
                         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
                             {/* Stats Cards Row */}
                             <StatsCard
@@ -276,23 +276,15 @@ const Dashboard: React.FC = () => {
                                 subtitle="Average processing time"
                             />
 
-                            {/* Pending Approvals - Priority for PIC */}
-                            {pendingApprovals.length > 0 && (
-                                <Box sx={{ gridColumn: { xs: '1', md: '1 / -1' } }}>
-                                    <PendingApprovals
-                                        approvals={pendingApprovals}
-                                        title="Documents Awaiting Your Review"
-                                    />
-                                </Box>
-                            )}
-
-                            {/* Charts */}
+                            {/* Charts - Status Distribution and Document Timeline */}
                             <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
                                 <StatusDistributionChart data={docStats.byStatus} />
                             </Box>
                             <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
                                 <DocumentTimelineChart data={timelineData} />
                             </Box>
+
+                            {/* Top Vendors and Recent Activities */}
                             <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
                                 <VendorAnalyticsChart data={vendorStats} />
                             </Box>
