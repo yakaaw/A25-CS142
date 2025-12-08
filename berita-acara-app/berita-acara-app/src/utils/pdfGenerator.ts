@@ -42,7 +42,6 @@ const addSignatureToPDF = async (
 
         // If it's a URL, convert to base64
         if (!isBase64(signatureData)) {
-            console.log('Converting URL to base64:', signatureData);
             imageData = await urlToBase64(signatureData);
         }
 
@@ -55,23 +54,64 @@ const addSignatureToPDF = async (
     }
 };
 
+// Helper for "Kop Surat" Header
+const addHeader = (doc: jsPDF) => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Company Name
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("PT. REPORTIFY INDONESIA SEJAHTERA", pageWidth / 2, 20, { align: "center" });
+
+    // Company Address
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Jl. Sudirman No. 123, Jakarta Selatan, Indonesia", pageWidth / 2, 26, { align: "center" });
+    doc.text("Telp: (021) 555-0123 | Email: admin@reportify.id", pageWidth / 2, 31, { align: "center" });
+
+    // Line Separator
+    doc.setLineWidth(0.5);
+    doc.line(20, 36, pageWidth - 20, 36);
+    doc.setLineWidth(1.5); // Thick line
+    doc.line(20, 37, pageWidth - 20, 37);
+};
+
 export const generateBAPBPDF = async (data: BAPB) => {
     const doc = new jsPDF();
 
-    // Header
-    doc.setFontSize(16);
-    doc.text('BERITA ACARA PENERIMAAN BARANG', 105, 20, { align: 'center' });
+    // 1. Add Professional Header
+    addHeader(doc);
 
-    doc.setFontSize(12);
-    doc.text(`Nomor: ${data.id || '-'}`, 105, 30, { align: 'center' });
+    // 2. Document Title
+    const pageWidth = doc.internal.pageSize.width;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text('BERITA ACARA PENERIMAAN BARANG', pageWidth / 2, 55, { align: 'center' });
 
-    // Info
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Nomor Dokumen: ${data.id?.substring(0, 8).toUpperCase() || '-'}`, pageWidth / 2, 62, { align: 'center' });
+
+    // 3. Document Details (Formatted)
+    const startY = 80;
     doc.setFontSize(10);
-    doc.text(`Tanggal: ${new Date(data.createdAt || '').toLocaleDateString('id-ID')}`, 14, 45);
-    doc.text(`Vendor: ${data.vendorId || '-'}`, 14, 50);
-    doc.text(`Status: ${data.status || 'Pending'}`, 14, 55);
 
-    // Table
+    // Left Column
+    doc.text('Tanggal', 20, startY);
+    doc.text(':', 50, startY);
+    doc.text(new Date(data.createdAt || '').toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 55, startY);
+
+    doc.text('Vendor', 20, startY + 7);
+    doc.text(':', 50, startY + 7);
+    doc.text(data.vendorId || '-', 55, startY + 7);
+
+    // Right Column (aligned from right)
+    const rightColX = 140;
+    doc.text('Status', rightColX, startY);
+    doc.text(':', rightColX + 20, startY);
+    doc.text((data.status || 'Pending').toUpperCase(), rightColX + 25, startY);
+
+    // 4. Products Table
     const tableColumn = ["No", "Deskripsi Barang", "Jumlah", "Satuan", "Kondisi"];
     const tableRows: any[] = [];
 
@@ -87,79 +127,85 @@ export const generateBAPBPDF = async (data: BAPB) => {
     });
 
     autoTable(doc, {
-        startY: 65,
+        startY: startY + 20,
         head: [tableColumn],
         body: tableRows,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, halign: 'center' },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 15 }, // No
+            2: { halign: 'center', cellWidth: 20 }, // Qty
+            3: { halign: 'center', cellWidth: 25 }, // Unit
+        },
+        styles: { fontSize: 10, cellPadding: 3 },
     });
 
-    // Get signatures from approval history
+    // 5. Signatures Section
     const picApproval = data.approvalHistory?.find(h => h.stage === 'pic_review' && h.status === 'approved');
     const direksiApproval = data.approvalHistory?.find(h => h.stage === 'direksi_review' && h.status === 'approved');
 
-    console.log('PIC Approval:', picApproval);
-    console.log('Direksi Approval:', direksiApproval);
+    // Tighter spacing: 10 units after table instead of 30
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
 
-    // Signatures section
-    const finalY = (doc as any).lastAutoTable.finalY + 20 || 120;
-
-    // Vendor signature (left)
-    doc.setFontSize(10);
-    doc.text('Diserahkan Oleh,', 40, finalY, { align: 'center' });
-    doc.text('( Vendor )', 40, finalY + 30, { align: 'center' });
-
-    // PIC Gudang signature (right)
-    doc.text('Diperiksa Oleh,', 170, finalY, { align: 'center' });
-
-    // Add PIC signature
-    const picSignatureAdded = await addSignatureToPDF(
-        doc,
-        picApproval?.signatureUrl,
-        152,
-        finalY + 5,
-        35,
-        18
-    );
-
-    if (picSignatureAdded) {
-        console.log('✓ PIC signature added successfully');
-    } else {
-        console.log('✗ PIC signature not available');
+    // Check if enough space for signatures (need approx 70 units), else add page
+    if (finalY + 70 > 280) {
+        doc.addPage();
+        // reset Y for new page
+        // If new page, start near top
     }
 
-    // Display PIC name
+    // Signature Title
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    // Layout: Left (Vendor), Right (PIC), Center Bottom (Direksi)
+    const leftX = 40;     // Indented slightly
+    const rightX = 160;   // Moved left slightly to ensure fit
+    const centerX = pageWidth / 2;
+
+    // Row 1: Vendor & PIC
+    const row1Y = finalY;
+
+    // Vendor (Left)
+    doc.text('Diserahkan Oleh,', leftX, row1Y, { align: 'center' });
+    doc.text('Vendor / Supplier', leftX, row1Y + 5, { align: 'center' });
+
+    // PIC (Right)
+    doc.text('Diterima & Diperiksa Oleh,', rightX, row1Y, { align: 'center' });
+    doc.text('PIC Gudang', rightX, row1Y + 5, { align: 'center' });
+
+    // Placeholders / Signatures (Row 1)
+    const sigImageY = row1Y + 10;
+
+    // Vendor Sig Placeholder line
+    doc.text('( ........................... )', leftX, sigImageY + 25, { align: 'center' });
+
+    // PIC Sig
+    const picSigAdded = await addSignatureToPDF(doc, picApproval?.signatureUrl, rightX - 15, sigImageY, 30, 20); // 30x20 image
+
+    // PIC Name
     if (picApproval?.actorName) {
-        doc.setFontSize(9);
-        doc.text(picApproval.actorName, 170, finalY + 25, { align: 'center' });
-    }
-    doc.setFontSize(10);
-    doc.text('( PIC Gudang )', 170, finalY + 30, { align: 'center' });
-
-    // Direksi signature (center bottom)
-    doc.text('Mengetahui,', 105, finalY + 45, { align: 'center' });
-
-    // Add Direksi signature
-    const direksiSignatureAdded = await addSignatureToPDF(
-        doc,
-        direksiApproval?.signatureUrl,
-        87,
-        finalY + 50,
-        35,
-        18
-    );
-
-    if (direksiSignatureAdded) {
-        console.log('✓ Direksi signature added successfully');
+        doc.text(`( ${picApproval.actorName} )`, rightX, sigImageY + 25, { align: 'center' });
     } else {
-        console.log('✗ Direksi signature not available');
+        doc.text('( ........................... )', rightX, sigImageY + 25, { align: 'center' });
     }
 
-    // Display Direksi name
+    // Row 2: Direksi (Center)
+    // Reduce gap: Start 40 units below Row 1 (was 55+)
+    const row2Y = row1Y + 45;
+
+    doc.text('Menyetujui,', centerX, row2Y, { align: 'center' });
+    doc.text('Direksi', centerX, row2Y + 5, { align: 'center' });
+
+    // Direksi Sig
+    const direksiSigAdded = await addSignatureToPDF(doc, direksiApproval?.signatureUrl, centerX - 15, row2Y + 10, 30, 20);
+
+    // Direksi Name
     if (direksiApproval?.actorName) {
-        doc.setFontSize(9);
-        doc.text(direksiApproval.actorName, 105, finalY + 70, { align: 'center' });
+        doc.text(`( ${direksiApproval.actorName} )`, centerX, row2Y + 35, { align: 'center' });
+    } else {
+        doc.text('( ........................... )', centerX, row2Y + 35, { align: 'center' });
     }
-    doc.setFontSize(10);
-    doc.text('( Direksi )', 105, finalY + 75, { align: 'center' });
 
     // Save
     doc.save(`BAPB_${data.id}.pdf`);
@@ -168,20 +214,38 @@ export const generateBAPBPDF = async (data: BAPB) => {
 export const generateBAPPPDF = async (data: BAPP) => {
     const doc = new jsPDF();
 
-    // Header
-    doc.setFontSize(16);
-    doc.text('BERITA ACARA PENYELESAIAN PEKERJAAN', 105, 20, { align: 'center' });
+    // 1. Header
+    addHeader(doc);
 
-    doc.setFontSize(12);
-    doc.text(`Nomor: ${data.id || '-'}`, 105, 30, { align: 'center' });
+    // 2. Title
+    const pageWidth = doc.internal.pageSize.width;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text('BERITA ACARA PENYELESAIAN PEKERJAAN', pageWidth / 2, 55, { align: 'center' });
 
-    // Info
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Nomor Dokumen: ${data.id?.substring(0, 8).toUpperCase() || '-'}`, pageWidth / 2, 62, { align: 'center' });
+
+    // 3. Info
+    const startY = 80;
     doc.setFontSize(10);
-    doc.text(`Tanggal: ${new Date(data.createdAt || '').toLocaleDateString('id-ID')}`, 14, 45);
-    doc.text(`Vendor: ${data.vendorId || '-'}`, 14, 50);
-    doc.text(`Status: ${data.status || 'Pending'}`, 14, 55);
 
-    // Table
+    doc.text('Tanggal', 20, startY);
+    doc.text(':', 50, startY);
+    doc.text(new Date(data.createdAt || '').toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), 55, startY);
+
+    doc.text('Vendor', 20, startY + 7);
+    doc.text(':', 50, startY + 7);
+    doc.text(data.vendorId || '-', 55, startY + 7);
+
+    // Right Column
+    const rightColX = 140;
+    doc.text('Status', rightColX, startY);
+    doc.text(':', rightColX + 20, startY);
+    doc.text((data.status || 'Pending').toUpperCase(), rightColX + 25, startY);
+
+    // 4. Table
     const tableColumn = ["No", "Deskripsi Pekerjaan", "Catatan"];
     const tableRows: any[] = [];
 
@@ -195,79 +259,76 @@ export const generateBAPPPDF = async (data: BAPP) => {
     });
 
     autoTable(doc, {
-        startY: 65,
+        startY: startY + 20,
         head: [tableColumn],
         body: tableRows,
+        theme: 'grid',
+        headStyles: { fillColor: [46, 204, 113], textColor: 255, halign: 'center' }, // Green for BAPP
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 15 },
+        },
+        styles: { fontSize: 10, cellPadding: 3 },
     });
 
-    // Get signatures from approval history
+    // 5. Signatures
     const picApproval = data.approvalHistory?.find(h => h.stage === 'pic_review' && h.status === 'approved');
     const direksiApproval = data.approvalHistory?.find(h => h.stage === 'direksi_review' && h.status === 'approved');
 
-    console.log('PIC Approval:', picApproval);
-    console.log('Direksi Approval:', direksiApproval);
+    // Tighter spacing
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
 
-    // Signatures section
-    const finalY = (doc as any).lastAutoTable.finalY + 20 || 120;
-
-    // Vendor signature (left)
-    doc.setFontSize(10);
-    doc.text('Diserahkan Oleh,', 40, finalY, { align: 'center' });
-    doc.text('( Vendor )', 40, finalY + 30, { align: 'center' });
-
-    // PIC Pemesan signature (right)
-    doc.text('Diperiksa Oleh,', 170, finalY, { align: 'center' });
-
-    // Add PIC signature
-    const picSignatureAdded = await addSignatureToPDF(
-        doc,
-        picApproval?.signatureUrl,
-        152,
-        finalY + 5,
-        35,
-        18
-    );
-
-    if (picSignatureAdded) {
-        console.log('✓ PIC signature added successfully');
-    } else {
-        console.log('✗ PIC signature not available');
+    // Check page break
+    if (finalY + 70 > 280) {
+        doc.addPage();
     }
 
-    // Display PIC name
+    // Titles
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+
+    const leftX = 40;
+    const rightX = 160;
+    const centerX = pageWidth / 2;
+
+    // Row 1
+    const row1Y = finalY;
+
+    // Vendor
+    doc.text('Diserahkan Oleh,', leftX, row1Y, { align: 'center' });
+    doc.text('Vendor / Kontraktor', leftX, row1Y + 5, { align: 'center' });
+
+    // PIC
+    doc.text('Diterima & Diperiksa Oleh,', rightX, row1Y, { align: 'center' });
+    doc.text('PIC Pemesan', rightX, row1Y + 5, { align: 'center' });
+
+    // Signatures Row 1
+    const sigImageY = row1Y + 10;
+
+    // Vendor Placeholders
+    doc.text('( ........................... )', leftX, sigImageY + 25, { align: 'center' });
+
+    // PIC Signature
+    await addSignatureToPDF(doc, picApproval?.signatureUrl, rightX - 15, sigImageY, 30, 20);
+
     if (picApproval?.actorName) {
-        doc.setFontSize(9);
-        doc.text(picApproval.actorName, 170, finalY + 25, { align: 'center' });
-    }
-    doc.setFontSize(10);
-    doc.text('( PIC Gudang )', 170, finalY + 30, { align: 'center' });
-
-    // Direksi signature (center bottom)
-    doc.text('Mengetahui,', 105, finalY + 45, { align: 'center' });
-
-    // Add Direksi signature
-    const direksiSignatureAdded = await addSignatureToPDF(
-        doc,
-        direksiApproval?.signatureUrl,
-        87,
-        finalY + 50,
-        35,
-        18
-    );
-
-    if (direksiSignatureAdded) {
-        console.log('✓ Direksi signature added successfully');
+        doc.text(`( ${picApproval.actorName} )`, rightX, sigImageY + 25, { align: 'center' });
     } else {
-        console.log('✗ Direksi signature not available');
+        doc.text('( ........................... )', rightX, sigImageY + 25, { align: 'center' });
     }
 
-    // Display Direksi name
+    // Row 2: Direksi
+    const row2Y = row1Y + 45;
+
+    doc.text('Menyetujui,', centerX, row2Y, { align: 'center' });
+    doc.text('Direksi', centerX, row2Y + 5, { align: 'center' });
+
+    await addSignatureToPDF(doc, direksiApproval?.signatureUrl, centerX - 15, row2Y + 10, 30, 20);
+
     if (direksiApproval?.actorName) {
-        doc.setFontSize(9);
-        doc.text(direksiApproval.actorName, 105, finalY + 70, { align: 'center' });
+        doc.text(`( ${direksiApproval.actorName} )`, centerX, row2Y + 35, { align: 'center' });
+    } else {
+        doc.text('( ........................... )', centerX, row2Y + 35, { align: 'center' });
     }
-    doc.setFontSize(10);
-    doc.text('( Direksi )', 105, finalY + 75, { align: 'center' });
 
     // Save
     doc.save(`BAPP_${data.id}.pdf`);

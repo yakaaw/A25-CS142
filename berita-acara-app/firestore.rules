@@ -37,23 +37,32 @@ service cloud.firestore {
     function isVendor() {
       return getUserRole() == 'vendor';
     }
+
+    // Check if user has staff privileges (non-vendor)
+    function isStaff() {
+      return isAdmin() || isPICGudang() || isPICPemesan() || isDireksi();
+    }
     
     // ============================================
     // Users Collection
     // ============================================
     match /users/{userId} {
-      // Anyone authenticated can read all users (needed for member list, vendor selection, etc)
-      allow read: if isAuthenticated();
+      // Improved Privacy:
+      // - Users can read their own profile
+      // - Staff (Admin, PIC, Direksi) can read all users (needed for workflows)
+      // - Vendors CANNOT read other users' data
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || isStaff()
+      );
       
-      // Users can update their own profile
-      // Admins can update any user
+      // Update: Users edit own, Admin edits all
       allow update: if isAuthenticated() && 
         (request.auth.uid == userId || isAdmin());
       
-      // Only authenticated users can create (signup)
+      // Create: Signup
       allow create: if isAuthenticated();
       
-      // Only admins can delete users
+      // Delete: Admin only
       allow delete: if isAuthenticated() && isAdmin();
     }
     
@@ -61,10 +70,7 @@ service cloud.firestore {
     // Roles Collection
     // ============================================
     match /roles/{roleId} {
-      // Anyone authenticated can read roles (needed for permissions)
       allow read: if isAuthenticated();
-      
-      // Only admins can manage roles
       allow write: if isAuthenticated() && isAdmin();
     }
     
@@ -74,27 +80,19 @@ service cloud.firestore {
     match /bapb/{bapbId} {
       // Read access:
       // - Vendor can read their own BAPB
-      // - PIC Gudang, Direksi, Admin can read all
+      // - Staff can read all
       allow read: if isAuthenticated() && (
         resource.data.vendorId == request.auth.uid ||
-        isPICGudang() ||
-        isDireksi() ||
-        isAdmin()
+        isStaff()
       );
       
-      // Create access:
-      // - Vendor can create BAPB with their own vendorId
-      // - Admin can create any BAPB
+      // Create access: Vendor own, Admin any
       allow create: if isAuthenticated() && (
         (isVendor() && request.resource.data.vendorId == request.auth.uid) ||
         isAdmin()
       );
       
-      // Update access:
-      // - Vendor can update their own BAPB if still in draft
-      // - PIC Gudang can approve/reject when waiting_pic
-      // - Direksi can approve/reject when waiting_direksi
-      // - Admin can update any BAPB
+      // Update access
       allow update: if isAuthenticated() && (
         (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
         (isPICGudang() && resource.data.currentStage == 'waiting_pic') ||
@@ -102,9 +100,7 @@ service cloud.firestore {
         isAdmin()
       );
       
-      // Delete access:
-      // - Vendor can delete their own BAPB if still in draft
-      // - Admin can delete any BAPB
+      // Delete access
       allow delete: if isAuthenticated() && (
         (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
         isAdmin()
@@ -115,29 +111,19 @@ service cloud.firestore {
     // BAPP Collection (Berita Acara Pelaksanaan Pekerjaan)
     // ============================================
     match /bapp/{bappId} {
-      // Read access:
-      // - Vendor can read their own BAPP
-      // - PIC Pemesan, Direksi, Admin can read all
+      // Read access
       allow read: if isAuthenticated() && (
         resource.data.vendorId == request.auth.uid ||
-        isPICPemesan() ||
-        isDireksi() ||
-        isAdmin()
+        isStaff()
       );
       
-      // Create access:
-      // - Vendor can create BAPP with their own vendorId
-      // - Admin can create any BAPP
+      // Create access
       allow create: if isAuthenticated() && (
         (isVendor() && request.resource.data.vendorId == request.auth.uid) ||
         isAdmin()
       );
       
-      // Update access:
-      // - Vendor can update their own BAPP if still in draft
-      // - PIC Pemesan can approve/reject when waiting_pic
-      // - Direksi can approve/reject when waiting_direksi
-      // - Admin can update any BAPP
+      // Update access
       allow update: if isAuthenticated() && (
         (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
         (isPICPemesan() && resource.data.currentStage == 'waiting_pic') ||
@@ -145,9 +131,7 @@ service cloud.firestore {
         isAdmin()
       );
       
-      // Delete access:
-      // - Vendor can delete their own BAPP if still in draft
-      // - Admin can delete any BAPP
+      // Delete access
       allow delete: if isAuthenticated() && (
         (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
         isAdmin()
@@ -155,15 +139,18 @@ service cloud.firestore {
     }
     
     // ============================================
-    // Audit Logs Collection (Future implementation)
+    // Audit Logs Collection
     // ============================================
     match /audit_logs/{logId} {
-      // Only admins can read audit logs
-      allow read: if isAuthenticated() && isAdmin();
+      // Admins and Staff can read logs
+      allow read: if isAuthenticated() && isStaff();
       
-      // System can write audit logs (via Cloud Functions)
-      // Users cannot directly write audit logs
-      allow write: if false;
+      // Anyone can create a log entry if they are authenticated (for client-side logging)
+      // Ideally this is done via backend, but for now we allow client write
+      allow create: if isAuthenticated();
+      
+      // Logs are immutable (cannot update or delete)
+      allow update, delete: if false;
     }
   }
 }
