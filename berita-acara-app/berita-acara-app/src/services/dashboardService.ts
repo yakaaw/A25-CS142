@@ -18,7 +18,7 @@ import {
  */
 
 // Helper: Get date range
-const getDateRange = (days: number): DateRange => {
+export const getDateRange = (days: number): DateRange => {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - days);

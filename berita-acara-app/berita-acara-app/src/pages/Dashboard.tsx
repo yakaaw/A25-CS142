@@ -37,7 +37,8 @@ import {
     getVendorStats,
     getTimelineData,
     getRecentActivities,
-    getPendingApprovals
+    getPendingApprovals,
+    getDateRange
 } from '../services/dashboardService';
 
 import {
@@ -80,10 +81,11 @@ const Dashboard: React.FC = () => {
         try {
             const userId = userProfile?.uid || '';
             const userRole = userProfile?.role || '';
+            const dateFilter = getDateRange(parseInt(dateRange));
 
             const [stats, metrics, vendors, timeline, recentActivities, pending] = await Promise.all([
-                getDocumentStats(userId, userRole),
-                getApprovalMetrics(userId, userRole),
+                getDocumentStats(userId, userRole, dateFilter),
+                getApprovalMetrics(userId, userRole, dateFilter),
                 getVendorStats(userId, userRole, 10),
                 getTimelineData(userId, userRole, 6),
                 getRecentActivities(userId, userRole, 10),
@@ -107,7 +109,7 @@ const Dashboard: React.FC = () => {
         if (userProfile) {
             loadDashboardData();
         }
-    }, [userProfile]);
+    }, [userProfile, dateRange]);
 
     const handleRefresh = () => {
         loadDashboardData();
@@ -186,34 +188,42 @@ const Dashboard: React.FC = () => {
                     {userProfile?.role === 'admin' && (
                         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
                             {/* Stats Cards Row */}
-                            <StatsCard
-                                title="Total Documents"
-                                value={docStats.total}
-                                icon={<DescriptionIcon />}
-                                color="primary"
-                                subtitle={`${docStats.bapb} BAPB, ${docStats.bapp} BAPP`}
-                            />
-                            <StatsCard
-                                title="Pending Approvals"
-                                value={approvalMetrics.pendingCount}
-                                icon={<ScheduleIcon />}
-                                color="warning"
-                                subtitle="Awaiting review"
-                            />
-                            <StatsCard
-                                title="Approved This Month"
-                                value={approvalMetrics.approvedThisMonth}
-                                icon={<CheckCircleIcon />}
-                                color="success"
-                                subtitle={`${approvalMetrics.approvalRate}% approval rate`}
-                            />
-                            <StatsCard
-                                title="Avg Approval Time"
-                                value={`${approvalMetrics.avgApprovalTime}h`}
-                                icon={<SpeedIcon />}
-                                color="info"
-                                subtitle="Average processing time"
-                            />
+                            <Box sx={{ height: 140 }}>
+                                <StatsCard
+                                    title="Total Documents"
+                                    value={docStats.total}
+                                    icon={<DescriptionIcon />}
+                                    color="primary"
+                                    subtitle={`${docStats.bapb} BAPB, ${docStats.bapp} BAPP`}
+                                />
+                            </Box>
+                            <Box sx={{ height: 140 }}>
+                                <StatsCard
+                                    title="Pending Approvals"
+                                    value={approvalMetrics.pendingCount}
+                                    icon={<ScheduleIcon />}
+                                    color="warning"
+                                    subtitle="Awaiting review"
+                                />
+                            </Box>
+                            <Box sx={{ height: 140 }}>
+                                <StatsCard
+                                    title="Approved This Month"
+                                    value={approvalMetrics.approvedThisMonth}
+                                    icon={<CheckCircleIcon />}
+                                    color="success"
+                                    subtitle={`${approvalMetrics.approvalRate}% approval rate`}
+                                />
+                            </Box>
+                            <Box sx={{ height: 140 }}>
+                                <StatsCard
+                                    title="Avg Approval Time"
+                                    value={`${approvalMetrics.avgApprovalTime}h`}
+                                    icon={<SpeedIcon />}
+                                    color="info"
+                                    subtitle="Average processing time"
+                                />
+                            </Box>
 
                             {/* System Overview - Admin only */}
                             <Box sx={{ gridColumn: { xs: '1', md: 'span 2' } }}>
