@@ -96,6 +96,10 @@ const BAPPDetail: React.FC = () => {
       return data.currentStage === 'waiting_pic' || data.currentStage === 'waiting_direksi';
     }
 
+    // Role-based approval
+    if ((userProfile?.role === 'pic_pemesan' || userProfile?.role === 'pemesan') && data.currentStage === 'waiting_pic') return true;
+    if (userProfile?.role === 'direksi' && data.currentStage === 'waiting_direksi') return true;
+
     if (!permissions.includes('bapp.verify') && !permissions.includes('bapp.approve')) return false;
     if (permissions.includes('bapp.verify') && data.currentStage === 'waiting_pic') return true;
     if (permissions.includes('bapp.approve') && data.currentStage === 'waiting_direksi') return true;

@@ -64,6 +64,8 @@ const BAPPList: React.FC = () => {
         limit: 10,
         status: filterStatus,
         lastDoc: isLoadMore ? loadRef.current : undefined,
+        userId: userProfile?.uid,
+        userRole: userProfile?.role,
       });
 
       if (res.success) {

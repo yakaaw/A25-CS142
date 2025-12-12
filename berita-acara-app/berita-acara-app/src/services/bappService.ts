@@ -31,45 +31,47 @@ export interface ApprovalLog {
 }
 
 export interface BAPP {
-  id?: string;
-  vendorId?: string;
+   id?: string;
+   vendorId?: string;
+   vendorName?: string;
 
-  // Project & Contract Info
-  contractNumber?: string; // Nomor Kontrak/PO
-  projectName?: string; // Nama Pekerjaan
-  startDate?: string; // Tanggal Mulai Proyek
-  endDate?: string; // Tanggal Selesai Proyek
+   // Project & Contract Info
+   contractNumber?: string; // Nomor Kontrak/PO
+   projectName?: string; // Nama Pekerjaan
+   startDate?: string; // Tanggal Mulai Proyek
+   endDate?: string; // Tanggal Selesai Proyek
 
-  // Parties Info (Snapshot at creation time)
-  party1?: { // Pelaksana (Vendor)
-    name: string;
-    position: string;
-    companyName: string;
-    address: string;
-  };
-  party2?: { // Pemberi Kerja (Klien)
-    name: string;
-    position: string;
-    companyName: string;
-    address: string;
-  };
+   // Parties Info (Snapshot at creation time)
+   party1?: { // Pelaksana (Vendor)
+     name: string;
+     position: string;
+     companyName: string;
+     address: string;
+   };
+   party2?: { // Pemberi Kerka (Klien)
+     name: string;
+     position: string;
+     companyName: string;
+     address: string;
+   };
 
-  workDetails?: BAPPWorkDetail[];
-  status?: 'pending' | 'approved' | 'rejected';
-  currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
-  approvalHistory?: ApprovalLog[];
-  attachments?: string[];
-  isArchived?: boolean;
-  archivedAt?: string;
-  archivedBy?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  [key: string]: any;
-}
+   workDetails?: BAPPWorkDetail[];
+   status?: 'pending' | 'approved' | 'rejected';
+   currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
+   approvalHistory?: ApprovalLog[];
+   attachments?: string[];
+   isArchived?: boolean;
+   archivedAt?: string;
+   archivedBy?: string;
+   createdAt?: string;
+   updatedAt?: string;
+   vendorSignatureUrl?: string;
+   [key: string]: any;
+ }
 
 const COLLECTION_NAME = 'bapp';
 
-export const createBAPP = async (data: Partial<BAPP>) => {
+export const createBAPP = async (data: Partial<BAPP>, userId: string, userName?: string, userSignatureUrl?: string) => {
   try {
     const initialHistory: ApprovalLog[] = [{
       stage: 'vendor_submit',
@@ -82,6 +84,9 @@ export const createBAPP = async (data: Partial<BAPP>) => {
 
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...data,
+      vendorId: userId,
+      vendorName: userName,
+      vendorSignatureUrl: userSignatureUrl,
       status: 'pending',
       currentStage: 'waiting_pic',
       approvalHistory: initialHistory,
@@ -154,7 +159,7 @@ export const approveBAPP = async (id: string, actor: { uid: string, name: string
         history.push(entry);
       }
       authorizedAction = true;
-    } else if (currentStage === 'waiting_pic' && role === 'pic_pemesan') {
+    } else if (currentStage === 'waiting_pic' && (role === 'pic_pemesan' || role === 'pemesan')) {
       nextStage = 'waiting_direksi';
       const entry: any = {
         stage: 'pic_review',
@@ -252,41 +257,42 @@ export const getBAPPById = async (id: string) => {
   }
 };
 
-export const getAllBAPP = async (options?: { limit?: number; lastDoc?: any; status?: string }) => {
-  try {
-    const constraints: any[] = [orderBy('createdAt', 'desc')];
+export const getAllBAPP = async (options?: { limit?: number; lastDoc?: any; status?: string; userId?: string; userRole?: string }) => {
+    try {
+        const constraints: any[] = [orderBy('createdAt', 'desc')];
 
-    if (options?.status && options.status !== 'all') {
-      constraints.push(where('status', '==', options.status));
-    }
+        if (options?.status && options.status !== 'all') {
+            constraints.push(where('status', '==', options.status));
+        }
 
-    if (options?.limit) {
-      constraints.push(limit(options.limit));
-    }
+        if (options?.limit) {
+            constraints.push(limit(options.limit));
+        }
 
-    if (options?.lastDoc) {
-      constraints.push(startAfter(options.lastDoc));
-    }
+        if (options?.lastDoc) {
+            constraints.push(startAfter(options.lastDoc));
+        }
 
-    const q = query(collection(db, COLLECTION_NAME), ...constraints);
-    const querySnapshot = await getDocs(q);
-    const bappList: BAPP[] = [];
+        const q = query(collection(db, COLLECTION_NAME), ...constraints);
+        const querySnapshot = await getDocs(q);
+        let bappList: BAPP[] = [];
 
-    // Filter out archived documents on client side
-    querySnapshot.forEach((d: DocumentSnapshot) => {
-      const data = { id: d.id, ...d.data() } as BAPP;
-      if (!data.isArchived) {
-        bappList.push(data);
-      }
-    });
+        // Filter out archived documents on client side
+        querySnapshot.forEach((d: DocumentSnapshot) => {
+            const data = { id: d.id, ...d.data() } as BAPP;
+            if (!data.isArchived) {
+                bappList.push(data);
+            }
+        });
 
-    const lastDoc = querySnapshot.docs.at(-1);
 
-    return {
-      success: true,
-      data: bappList,
-      lastDoc
-    };
+        const lastDoc = querySnapshot.docs.at(-1);
+
+        return {
+            success: true,
+            data: bappList,
+            lastDoc
+        };
   } catch (error: any) {
     console.error('Error getting BAPP list:', error);
     return { success: false, error: error.message };

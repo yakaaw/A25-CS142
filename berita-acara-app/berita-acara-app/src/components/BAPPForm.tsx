@@ -19,6 +19,7 @@ import { useForm, Controller, ControllerRenderProps } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import FileUpload from './FileUpload';
+import { useAuth } from '../context/AuthContext';
 
 interface BAPPFormData {
   vendorId: string;
@@ -46,6 +47,7 @@ const schema = yup.object({
 });
 
 const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
+  const { userProfile } = useAuth();
   const [workDetails, setWorkDetails] = useState<any[]>(initial.workDetails || []);
   const [notes, setNotes] = useState(initial.notes || '');
   const [attachments, setAttachments] = useState<string[]>(initial.attachments || []);
@@ -54,7 +56,7 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
 
   const { control, handleSubmit, formState, setValue } = useForm<BAPPFormData>({
     resolver: yupResolver(schema),
-    defaultValues: { vendorId: initial.vendorId || '', workDetails: initial.workDetails || [] },
+    defaultValues: { vendorId: initial.vendorId || userProfile?.uid || '', workDetails: initial.workDetails || [] },
   });
 
   React.useEffect(() => {
@@ -67,7 +69,7 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
 
     try {
       const payload: Partial<BAPP> = { vendorId: vals.vendorId, workDetails, notes, attachments };
-      const res = await createBAPP(payload);
+      const res = await createBAPP(payload, userProfile?.uid || '', userProfile?.name, userProfile?.signatureUrl);
       if (res.success && res.id) {
         onSaved?.(res.id);
       } else {
@@ -104,6 +106,7 @@ const BAPPForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
                 label="Vendor ID"
                 placeholder="Masukkan ID vendor"
                 required
+                disabled={userProfile?.role === 'vendor'}
                 error={!!formState.errors.vendorId}
                 helperText={formState.errors.vendorId?.message}
               />

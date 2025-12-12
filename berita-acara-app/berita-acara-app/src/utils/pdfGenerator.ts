@@ -103,7 +103,7 @@ export const generateBAPBPDF = async (data: BAPB) => {
 
     doc.text('Vendor', 20, startY + 7);
     doc.text(':', 50, startY + 7);
-    doc.text(data.vendorId || '-', 55, startY + 7);
+    doc.text(data.vendorName || data.vendorId || '-', 55, startY + 7);
 
     // Right Column (aligned from right)
     const rightColX = 140;
@@ -177,8 +177,15 @@ export const generateBAPBPDF = async (data: BAPB) => {
     // Placeholders / Signatures (Row 1)
     const sigImageY = row1Y + 10;
 
-    // Vendor Sig Placeholder line
-    doc.text('( ........................... )', leftX, sigImageY + 25, { align: 'center' });
+    // Vendor Sig
+    const vendorSigAdded = await addSignatureToPDF(doc, data.vendorSignatureUrl, leftX - 15, sigImageY, 30, 20);
+
+    // Vendor Name
+    if (data.vendorName) {
+      doc.text(`( ${data.vendorName} )`, leftX, sigImageY + 25, { align: 'center' });
+    } else {
+      doc.text('( ........................... )', leftX, sigImageY + 25, { align: 'center' });
+    }
 
     // PIC Sig
     const picSigAdded = await addSignatureToPDF(doc, picApproval?.signatureUrl, rightX - 15, sigImageY, 30, 20); // 30x20 image
@@ -237,7 +244,7 @@ export const generateBAPPPDF = async (data: BAPP) => {
 
     doc.text('Vendor', 20, startY + 7);
     doc.text(':', 50, startY + 7);
-    doc.text(data.vendorId || '-', 55, startY + 7);
+    doc.text(data.vendorName || data.vendorId || '-', 55, startY + 7);
 
     // Right Column
     const rightColX = 140;
@@ -304,8 +311,15 @@ export const generateBAPPPDF = async (data: BAPP) => {
     // Signatures Row 1
     const sigImageY = row1Y + 10;
 
-    // Vendor Placeholders
-    doc.text('( ........................... )', leftX, sigImageY + 25, { align: 'center' });
+    // Vendor Sig
+    await addSignatureToPDF(doc, data.vendorSignatureUrl, leftX - 15, sigImageY, 30, 20);
+
+    // Vendor Name
+    if (data.vendorName) {
+      doc.text(`( ${data.vendorName} )`, leftX, sigImageY + 25, { align: 'center' });
+    } else {
+      doc.text('( ........................... )', leftX, sigImageY + 25, { align: 'center' });
+    }
 
     // PIC Signature
     await addSignatureToPDF(doc, picApproval?.signatureUrl, rightX - 15, sigImageY, 30, 20);

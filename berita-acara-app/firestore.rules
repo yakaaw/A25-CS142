@@ -78,13 +78,8 @@ service cloud.firestore {
     // BAPB Collection (Berita Acara Penerimaan Barang)
     // ============================================
     match /bapb/{bapbId} {
-      // Read access:
-      // - Vendor can read their own BAPB
-      // - Staff can read all
-      allow read: if isAuthenticated() && (
-        resource.data.vendorId == request.auth.uid ||
-        isStaff()
-      );
+      // Read access: All authenticated users can read all BAPB
+      allow read: if isAuthenticated();
       
       // Create access: Vendor own, Admin any
       allow create: if isAuthenticated() && (
@@ -111,11 +106,8 @@ service cloud.firestore {
     // BAPP Collection (Berita Acara Pelaksanaan Pekerjaan)
     // ============================================
     match /bapp/{bappId} {
-      // Read access
-      allow read: if isAuthenticated() && (
-        resource.data.vendorId == request.auth.uid ||
-        isStaff()
-      );
+      // Read access: All authenticated users can read all BAPP
+      allow read: if isAuthenticated();
       
       // Create access
       allow create: if isAuthenticated() && (

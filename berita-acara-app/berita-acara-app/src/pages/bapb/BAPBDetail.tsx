@@ -96,6 +96,10 @@ const BAPBDetail: React.FC = () => {
       return data.currentStage === 'waiting_pic' || data.currentStage === 'waiting_direksi';
     }
 
+    // Role-based approval
+    if (userProfile?.role === 'pic_gudang' && data.currentStage === 'waiting_pic') return true;
+    if (userProfile?.role === 'direksi' && data.currentStage === 'waiting_direksi') return true;
+
     if (!permissions.includes('bapb.verify') && !permissions.includes('bapb.approve')) return false;
     if (permissions.includes('bapb.verify') && data.currentStage === 'waiting_pic') return true;
     if (permissions.includes('bapb.approve') && data.currentStage === 'waiting_direksi') return true;

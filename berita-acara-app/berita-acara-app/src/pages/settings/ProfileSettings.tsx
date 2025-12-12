@@ -52,7 +52,7 @@ const ProfileSettings: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Check if user has approval authority
-  const hasApprovalAuthority = ["pic_gudang", "direksi", "admin"].includes(
+  const hasApprovalAuthority = ["pic_gudang", "pic_pemesan", "pemesan", "direksi", "admin", "vendor"].includes(
     userProfile?.role || ""
   );
 

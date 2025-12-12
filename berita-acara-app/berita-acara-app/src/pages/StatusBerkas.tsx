@@ -25,8 +25,10 @@ import { Link } from 'react-router-dom';
 import { getAllBAPB } from '../services/bapbService';
 import { getAllBAPP } from '../services/bappService';
 import PageHeader from '../components/PageHeader';
+import { useAuth } from '../context/AuthContext';
 
 const StatusBerkas: React.FC = () => {
+    const { userProfile } = useAuth();
     const [stats, setStats] = useState({
         totalBAPB: 0,
         totalBAPP: 0,
@@ -58,7 +60,10 @@ const StatusBerkas: React.FC = () => {
     useEffect(() => {
         const loadStats = async () => {
             try {
-                const [bapbResult, bappResult] = await Promise.all([getAllBAPB(), getAllBAPP()]);
+                const [bapbResult, bappResult] = await Promise.all([
+                    getAllBAPB({ userId: userProfile?.uid, userRole: userProfile?.role }),
+                    getAllBAPP({ userId: userProfile?.uid, userRole: userProfile?.role })
+                ]);
 
                 const bapbData = bapbResult.success && bapbResult.data ? bapbResult.data : [];
                 const bappData = bappResult.success && bappResult.data ? bappResult.data : [];

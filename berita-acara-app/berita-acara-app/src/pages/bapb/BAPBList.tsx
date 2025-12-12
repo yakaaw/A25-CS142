@@ -62,6 +62,8 @@ const BAPBList: React.FC = () => {
       limit: 10,
       status: filterStatus,
       lastDoc: isLoadMore ? lastDoc : undefined,
+      userId: userProfile?.uid,
+      userRole: userProfile?.role,
     });
 
     if (res.success) {

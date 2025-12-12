@@ -19,6 +19,7 @@ import { useForm, Controller, ControllerRenderProps } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import FileUpload from './FileUpload';
+import { useAuth } from '../context/AuthContext';
 
 interface BAPBFormData {
   vendorId: string;
@@ -47,6 +48,7 @@ const schema = yup.object({
 });
 
 const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
+  const { userProfile } = useAuth();
   const [items, setItems] = useState<any[]>(initial.items || []);
   const [notes, setNotes] = useState(initial.notes || '');
   const [attachments, setAttachments] = useState<string[]>(initial.attachments || []);
@@ -55,7 +57,7 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
 
   const { control, handleSubmit, formState, setValue } = useForm<BAPBFormData>({
     resolver: yupResolver(schema),
-    defaultValues: { vendorId: initial.vendorId || '', items: initial.items || [] },
+    defaultValues: { vendorId: initial.vendorId || userProfile?.uid || '', items: initial.items || [] },
   });
 
   React.useEffect(() => {
@@ -68,7 +70,7 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
 
     try {
       const payload: Partial<BAPB> = { vendorId: vals.vendorId, items: items, notes, attachments };
-      const res = await createBAPB(payload);
+      const res = await createBAPB(payload, userProfile?.uid || '', userProfile?.name, userProfile?.signatureUrl);
       if (res.success && res.id) {
         onSaved?.(res.id);
       } else {
@@ -105,6 +107,7 @@ const BAPBForm: React.FC<Props> = ({ initial = {}, onSaved }) => {
                 label="Vendor ID"
                 placeholder="Masukkan ID vendor"
                 required
+                disabled={userProfile?.role === 'vendor'}
                 error={!!formState.errors.vendorId}
                 helperText={formState.errors.vendorId?.message}
               />

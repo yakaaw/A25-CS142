@@ -33,24 +33,26 @@ export interface BAPBItem {
 }
 
 export interface BAPB {
-  id?: string;
-  vendorId?: string;
-  items?: BAPBItem[];
-  status?: 'pending' | 'approved' | 'rejected';
-  currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
-  approvalHistory?: ApprovalLog[];
-  attachments?: string[];
-  isArchived?: boolean;
-  archivedAt?: string;
-  archivedBy?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  [key: string]: any;
-}
+   id?: string;
+   vendorId?: string;
+   vendorName?: string;
+   items?: BAPBItem[];
+   status?: 'pending' | 'approved' | 'rejected';
+   currentStage?: 'draft' | 'waiting_pic' | 'waiting_direksi' | 'approved' | 'rejected';
+   approvalHistory?: ApprovalLog[];
+   attachments?: string[];
+   isArchived?: boolean;
+   archivedAt?: string;
+   archivedBy?: string;
+   createdAt?: string;
+   updatedAt?: string;
+   vendorSignatureUrl?: string;
+   [key: string]: any;
+ }
 
 const COLLECTION_NAME = 'bapb';
 
-export const createBAPB = async (data: Partial<BAPB>) => {
+export const createBAPB = async (data: Partial<BAPB>, userId: string, userName?: string, userSignatureUrl?: string) => {
   try {
     const initialHistory: ApprovalLog[] = [{
       stage: 'vendor_submit',
@@ -63,6 +65,9 @@ export const createBAPB = async (data: Partial<BAPB>) => {
 
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...data,
+      vendorId: userId,
+      vendorName: userName,
+      vendorSignatureUrl: userSignatureUrl,
       status: 'pending',
       currentStage: 'waiting_pic',
       approvalHistory: initialHistory,
@@ -90,41 +95,42 @@ export const getBAPBById = async (id: string) => {
   }
 };
 
-export const getAllBAPB = async (options?: { limit?: number; lastDoc?: any; status?: string }) => {
-  try {
-    const constraints: any[] = [orderBy('createdAt', 'desc')];
+export const getAllBAPB = async (options?: { limit?: number; lastDoc?: any; status?: string; userId?: string; userRole?: string }) => {
+    try {
+        const constraints: any[] = [orderBy('createdAt', 'desc')];
 
-    if (options?.status && options.status !== 'all') {
-      constraints.push(where('status', '==', options.status));
-    }
+        if (options?.status && options.status !== 'all') {
+            constraints.push(where('status', '==', options.status));
+        }
 
-    if (options?.limit) {
-      constraints.push(limit(options.limit));
-    }
+        if (options?.limit) {
+            constraints.push(limit(options.limit));
+        }
 
-    if (options?.lastDoc) {
-      constraints.push(startAfter(options.lastDoc));
-    }
+        if (options?.lastDoc) {
+            constraints.push(startAfter(options.lastDoc));
+        }
 
-    const q = query(collection(db, COLLECTION_NAME), ...constraints);
-    const querySnapshot = await getDocs(q);
-    const bapbList: BAPB[] = [];
+        const q = query(collection(db, COLLECTION_NAME), ...constraints);
+        const querySnapshot = await getDocs(q);
+        let bapbList: BAPB[] = [];
 
-    // Filter out archived documents on client side
-    querySnapshot.forEach((d: DocumentSnapshot) => {
-      const data = { id: d.id, ...d.data() } as BAPB;
-      if (!data.isArchived) {
-        bapbList.push(data);
-      }
-    });
+        // Filter out archived documents on client side
+        querySnapshot.forEach((d: DocumentSnapshot) => {
+            const data = { id: d.id, ...d.data() } as BAPB;
+            if (!data.isArchived) {
+                bapbList.push(data);
+            }
+        });
 
-    const lastDoc = querySnapshot.docs.at(-1);
 
-    return {
-      success: true,
-      data: bapbList,
-      lastDoc
-    };
+        const lastDoc = querySnapshot.docs.at(-1);
+
+        return {
+            success: true,
+            data: bapbList,
+            lastDoc
+        };
   } catch (error: any) {
     console.error('Error getting BAPB list:', error);
     return { success: false, error: error.message };

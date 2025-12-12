@@ -33,6 +33,73 @@ const isInDateRange = (dateStr: string, range?: DateRange): boolean => {
 };
 
 /**
+ * Get document statistics for current user only
+ * @param userId - Current user ID
+ * @param dateRange - Optional date range filter
+ */
+export const getMyDocumentStats = async (userId: string, dateRange?: DateRange): Promise<DocumentStats> => {
+    try {
+        // Fetch documents for current user only
+        const bapbQuery = query(collection(db, 'bapb'), where('vendorId', '==', userId));
+        const bappQuery = query(collection(db, 'bapp'), where('vendorId', '==', userId));
+
+        const [bapbSnapshot, bappSnapshot] = await Promise.all([
+            getDocs(bapbQuery),
+            getDocs(bappQuery)
+        ]);
+
+        const bapbDocs: BAPB[] = [];
+        const bappDocs: BAPP[] = [];
+
+        bapbSnapshot.forEach(doc => {
+            const data = { id: doc.id, ...doc.data() } as BAPB;
+            if (!data.isArchived && isInDateRange(data.createdAt || '', dateRange)) {
+                bapbDocs.push(data);
+            }
+        });
+
+        bappSnapshot.forEach(doc => {
+            const data = { id: doc.id, ...doc.data() } as BAPP;
+            if (!data.isArchived && isInDateRange(data.createdAt || '', dateRange)) {
+                bappDocs.push(data);
+            }
+        });
+
+        const allDocs = [...bapbDocs, ...bappDocs];
+
+        // Calculate stats
+        const byStatus = {
+            pending: allDocs.filter(d => d.status === 'pending').length,
+            approved: allDocs.filter(d => d.status === 'approved').length,
+            rejected: allDocs.filter(d => d.status === 'rejected').length
+        };
+
+        const byStage: Record<string, number> = {};
+        allDocs.forEach(doc => {
+            const stage = doc.currentStage || 'draft';
+            byStage[stage] = (byStage[stage] || 0) + 1;
+        });
+
+        return {
+            total: allDocs.length,
+            bapb: bapbDocs.length,
+            bapp: bappDocs.length,
+            byStatus,
+            byStage
+        };
+    } catch (error) {
+        console.error('Error getting my document stats:', error);
+        return {
+            total: 0,
+            bapb: 0,
+            bapp: 0,
+            byStatus: { pending: 0, approved: 0, rejected: 0 },
+            byStage: {}
+        };
+    }
+};
+
+/**
  * Get document statistics
  * @param userId - Current user ID (for vendor filtering)
  * @param userRole - Current user role
@@ -40,7 +107,7 @@ const isInDateRange = (dateStr: string, range?: DateRange): boolean => {
  */
 export const getDocumentStats = async (userId: string, userRole: string, dateRange?: DateRange): Promise<DocumentStats> => {
     try {
-        // Fetch all BAPB and BAPP documents
+        // Fetch all BAPB and BAPP documents (all users can read all)
         const [bapbSnapshot, bappSnapshot] = await Promise.all([
             getDocs(collection(db, 'bapb')),
             getDocs(collection(db, 'bapp'))
@@ -319,9 +386,12 @@ const getActivityDescription = (type: Activity['type'], docType: 'BAPB' | 'BAPP'
  */
 export const getRecentActivities = async (userId: string, userRole: string, limitCount: number = 10): Promise<Activity[]> => {
     try {
+        const bapbConstraints: any[] = [orderBy('updatedAt', 'desc'), firestoreLimit(limitCount)];
+        const bappConstraints: any[] = [orderBy('updatedAt', 'desc'), firestoreLimit(limitCount)];
+
         const [bapbSnapshot, bappSnapshot] = await Promise.all([
-            getDocs(query(collection(db, 'bapb'), orderBy('updatedAt', 'desc'), firestoreLimit(limitCount))),
-            getDocs(query(collection(db, 'bapp'), orderBy('updatedAt', 'desc'), firestoreLimit(limitCount)))
+            getDocs(query(collection(db, 'bapb'), ...bapbConstraints)),
+            getDocs(query(collection(db, 'bapp'), ...bappConstraints))
         ]);
 
         const activities: Activity[] = [];
@@ -370,9 +440,12 @@ export const getRecentActivities = async (userId: string, userRole: string, limi
  */
 export const getPendingApprovals = async (userId: string, userRole: string): Promise<PendingApproval[]> => {
     try {
+        const bapbConstraints: any[] = [where('status', '==', 'pending')];
+        const bappConstraints: any[] = [where('status', '==', 'pending')];
+
         const [bapbSnapshot, bappSnapshot] = await Promise.all([
-            getDocs(query(collection(db, 'bapb'), where('status', '==', 'pending'))),
-            getDocs(query(collection(db, 'bapp'), where('status', '==', 'pending')))
+            getDocs(query(collection(db, 'bapb'), ...bapbConstraints)),
+            getDocs(query(collection(db, 'bapp'), ...bappConstraints))
         ]);
 
         const pendingApprovals: PendingApproval[] = [];
