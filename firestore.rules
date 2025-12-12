@@ -1,37 +1,156 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read/write their own profile, admins can read/write all
+
+    // ============================================
+    // Helper Functions
+    // ============================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    function isAdmin() {
+      return getUserRole() == 'admin';
+    }
+
+    function isPICGudang() {
+      return getUserRole() == 'pic_gudang';
+    }
+
+    function isPICPemesan() {
+      return getUserRole() == 'pic_pemesan' || getUserRole() == 'pemesan';
+    }
+
+    function isDireksi() {
+      return getUserRole() == 'direksi';
+    }
+
+    function isVendor() {
+      return getUserRole() == 'vendor';
+    }
+
+    // Check if user has staff privileges (non-vendor)
+    function isStaff() {
+      return isAdmin() || isPICGudang() || isPICPemesan() || isDireksi();
+    }
+
+    // ============================================
+    // Users Collection
+    // ============================================
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
-      allow write: if request.auth != null && (request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      // Improved Privacy:
+      // - Users can read their own profile
+      // - Staff (Admin, PIC, Direksi) can read all users (needed for workflows)
+      // - Vendors CANNOT read other users' data
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || isStaff()
+      );
+
+      // Update: Users edit own, Admin edits all
+      allow update: if isAuthenticated() &&
+        (request.auth.uid == userId || isAdmin());
+
+      // Create: Signup
+      allow create: if isAuthenticated();
+
+      // Delete: Admin only
+      allow delete: if isAuthenticated() && isAdmin();
     }
 
-    // Roles: read all if authenticated, write if admin
+    // ============================================
+    // Roles Collection
+    // ============================================
     match /roles/{roleId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAdmin();
     }
 
-    // BAPB documents
-    match /bapb/{document} {
-      allow read: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vendor', 'pic_gudang', 'direksi', 'admin'];
-      allow create: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vendor', 'admin'];
-      allow update: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pic_gudang', 'direksi', 'admin'];
+    // ============================================
+    // BAPB Collection (Berita Acara Penerimaan Barang)
+    // ============================================
+    match /bapb/{bapbId} {
+      // Read access:
+      // - Vendor can read their own BAPB
+      // - Staff can read all
+      allow read: if isAuthenticated() && (
+        resource.data.vendorId == request.auth.uid ||
+        isStaff()
+      );
+
+      // Create access: Vendor own, Admin any
+      allow create: if isAuthenticated() && (
+        (isVendor() && request.resource.data.vendorId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      // Update access
+      allow update: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        (isPICGudang() && resource.data.currentStage == 'waiting_pic') ||
+        (isDireksi() && resource.data.currentStage == 'waiting_direksi') ||
+        isAdmin()
+      );
+
+      // Delete access
+      allow delete: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        isAdmin()
+      );
     }
 
-    // BAPP documents
-    match /bapp/{document} {
-      allow read: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vendor', 'pic_pemesan', 'pemesan', 'direksi', 'admin'];
-      allow create: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vendor', 'admin'];
-      allow update: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pic_pemesan', 'pemesan', 'direksi', 'admin'];
+    // ============================================
+    // BAPP Collection (Berita Acara Pelaksanaan Pekerjaan)
+    // ============================================
+    match /bapp/{bappId} {
+      // Read access
+      allow read: if isAuthenticated() && (
+        resource.data.vendorId == request.auth.uid ||
+        isStaff()
+      );
+
+      // Create access
+      allow create: if isAuthenticated() && (
+        (isVendor() && request.resource.data.vendorId == request.auth.uid) ||
+        isAdmin()
+      );
+
+      // Update access
+      allow update: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        (isPICPemesan() && resource.data.currentStage == 'waiting_pic') ||
+        (isDireksi() && resource.data.currentStage == 'waiting_direksi') ||
+        isAdmin()
+      );
+
+      // Delete access
+      allow delete: if isAuthenticated() && (
+        (resource.data.vendorId == request.auth.uid && resource.data.currentStage == 'draft') ||
+        isAdmin()
+      );
+    }
+
+    // ============================================
+    // Audit Logs Collection
+    // ============================================
+    match /audit_logs/{logId} {
+      // Admins and Staff can read logs
+      allow read: if isAuthenticated() && isStaff();
+
+      // Anyone can create a log entry if they are authenticated (for client-side logging)
+      // Ideally this is done via backend, but for now we allow client write
+      allow create: if isAuthenticated();
+
+      // Logs are immutable (cannot update or delete)
+      allow update, delete: if false;
     }
   }
 }

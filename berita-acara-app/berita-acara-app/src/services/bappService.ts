@@ -129,53 +129,57 @@ export const approveBAPP = async (id: string, actor: { uid: string, name: string
     if (role === 'admin') {
       if (currentStage === 'waiting_pic') {
         nextStage = 'waiting_direksi';
-        history.push({
+        const entry: any = {
           stage: 'pic_review',
           status: 'approved',
           actorId: actor.uid,
           actorName: actor.name,
-          signatureUrl: actor.signatureUrl,
-          timestamp: new Date().toISOString(),
-          notes
-        });
+          timestamp: new Date().toISOString()
+        };
+        if (actor.signatureUrl) entry.signatureUrl = actor.signatureUrl;
+        if (notes) entry.notes = notes;
+        history.push(entry);
       } else if (currentStage === 'waiting_direksi') {
         nextStage = 'approved';
         newStatus = 'approved';
-        history.push({
+        const entry: any = {
           stage: 'direksi_review',
           status: 'approved',
           actorId: actor.uid,
           actorName: actor.name,
-          signatureUrl: actor.signatureUrl,
-          timestamp: new Date().toISOString(),
-          notes
-        });
+          timestamp: new Date().toISOString()
+        };
+        if (actor.signatureUrl) entry.signatureUrl = actor.signatureUrl;
+        if (notes) entry.notes = notes;
+        history.push(entry);
       }
       authorizedAction = true;
     } else if (currentStage === 'waiting_pic' && role === 'pic_pemesan') {
       nextStage = 'waiting_direksi';
-      history.push({
+      const entry: any = {
         stage: 'pic_review',
         status: 'approved',
         actorId: actor.uid,
         actorName: actor.name,
-        signatureUrl: actor.signatureUrl,
-        timestamp: new Date().toISOString(),
-        notes
-      });
+        timestamp: new Date().toISOString()
+      };
+      if (actor.signatureUrl) entry.signatureUrl = actor.signatureUrl;
+      if (notes) entry.notes = notes;
+      history.push(entry);
       authorizedAction = true;
     } else if (currentStage === 'waiting_direksi' && role === 'direksi') {
       nextStage = 'approved';
       newStatus = 'approved';
-      history.push({
+      const entry: any = {
         stage: 'direksi_review',
         status: 'approved',
         actorId: actor.uid,
         actorName: actor.name,
-        signatureUrl: actor.signatureUrl,
-        timestamp: new Date().toISOString(),
-        notes
-      });
+        timestamp: new Date().toISOString()
+      };
+      if (actor.signatureUrl) entry.signatureUrl = actor.signatureUrl;
+      if (notes) entry.notes = notes;
+      history.push(entry);
       authorizedAction = true;
     }
 
@@ -210,14 +214,15 @@ export const rejectBAPP = async (id: string, actor: { uid: string, name: string,
     let stage: 'pic_review' | 'direksi_review' = 'pic_review';
     if (data.currentStage === 'waiting_direksi') stage = 'direksi_review';
 
-    history.push({
+    const entry: any = {
       stage: stage,
       status: 'rejected',
       actorId: actor.uid,
       actorName: actor.name,
-      timestamp: new Date().toISOString(),
-      notes
-    });
+      timestamp: new Date().toISOString()
+    };
+    if (notes) entry.notes = notes;
+    history.push(entry);
 
     await updateDoc(docRef, {
       currentStage: 'rejected',
